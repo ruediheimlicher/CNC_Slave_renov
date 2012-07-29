@@ -363,8 +363,8 @@ ISR (TIMER2_OVF_vect)
 	
 	if (timer2Counter >= 14) 
 	{
-		CounterA+=1;
-		CounterB+=1;
+		CounterA-=1;
+		CounterB-=1;
 		timer2Counter = 0; 
         //OSZI_B_TOGG ;
 	} 
@@ -459,6 +459,8 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	DelayA = delayH;
 	DelayA <<=8;
 	DelayA += delayL;
+   
+   CounterA = DelayA;
 	
 	/*
     lcd_gotoxy(0,0);
@@ -502,6 +504,9 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	StepCounterB += dataL;	// +LByte
 	
 	DelayB = (AbschnittDaten[7]<<8)+ AbschnittDaten[6];
+   
+   CounterB = DelayB;
+   
    if (StepCounterA > StepCounterB) // Hoeherer Wert setzt relevante Zaehlvariable
    {
       cncstatus |= (1 << COUNT_A); // Schritte von Motor A zaehlen 
@@ -826,13 +831,20 @@ uint16_t count=0;
       // End Anschlag B0
       */
       
+      // **************************************
+      // * Motor A *
+      // **************************************
+   
+      
       // Es hat noch Steps, CounterA ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-            if (StepCounterA &&(CounterA >= DelayA) &&(!((cncstatus & (1<< END_A0))||(cncstatus & (1<< END_B0)))))//	
+            if (StepCounterA &&(CounterA == 0) &&(!((cncstatus & (1<< END_A0))||(cncstatus & (1<< END_B0)))))//	
             {
                 cli();
                // Impuls starten
                STEPPERPORT_1 &= ~(1<<MA_STEP);   // Impuls an Motor A LO -> ON
-               CounterA=0;                     // CounterA zuruecksetzen fuer neuen Impuls
+               CounterA=DelayA;                     // CounterA zuruecksetzen fuer neuen Impuls
+               
+               
                StepCounterA--;
                
                // Wenn StepCounterA abgelaufen und relevant: next Datenpaket abrufen
@@ -902,6 +914,8 @@ uint16_t count=0;
                         ladeposition++;
                         
                      }
+                     
+                     
                      if (aktuellelage==2)
                      {
                         //ringbufferstatus |= (1<<ENDBIT);
@@ -911,6 +925,7 @@ uint16_t count=0;
                   }
                   
                }
+               
                sei();
             }
             else
@@ -938,13 +953,13 @@ uint16_t count=0;
         */
 		
 		
-		if (StepCounterB && (CounterB >= DelayB))
+		if (StepCounterB && (CounterB == 0))
 		{
          cli();
          //lcd_putc('B');
          
 			STEPPERPORT_1 &= ~(1<<MB_STEP);					// Impuls an Motor B LO ON
-			CounterB=0;
+			CounterB= DelayB;
 			StepCounterB--;
          
 			if (StepCounterB ==0 && (cncstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
