@@ -407,6 +407,7 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	 code"
     position   Beschreibung der Lage im Schnittpolygon: first, last
     
+    
 	 */			
 	int lage = 0;
    lage = AbschnittDaten[9]; // Start: 1, innerhalb: 0, Ende: 2
