@@ -1094,7 +1094,7 @@ uint16_t count=0;
             sendbuffer[5]=0x00;
             sendbuffer[6]=0x00;
 
-            usb_rawhid_send((void*)sendbuffer, 50);
+ //           usb_rawhid_send((void*)sendbuffer, 50);
             sendbuffer[0]=0x00;
             sendbuffer[5]=0x00;
             sendbuffer[6]=0x00;
