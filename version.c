@@ -1,1 +1,1 @@
-//version.c#define VERSION "USB.71"
+//version.c#define VERSION "USB.71 git"
