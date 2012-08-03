@@ -63,11 +63,11 @@ volatile uint8_t liniencounter= 0;
 //#define SCLPIN		5
 
 // SPI
-#define OSZIPORT	PORTD
-#define OSZIPORTDDR	DDRD
-#define OSZIPORTPIN	PIND
-#define OSZI_PULS_A	0
-#define OSZI_PULS_B	1
+#define OSZIPORT           PORTD
+#define OSZIPORTDDR        DDRD
+#define OSZIPORTPIN        PIND
+#define OSZI_PULS_A        0
+#define OSZI_PULS_B        1
 
 #define OSZI_A_LO OSZIPORT &= ~(1<<OSZI_PULS_A)
 #define OSZI_A_HI OSZIPORT |= (1<<OSZI_PULS_A)
@@ -153,13 +153,13 @@ volatile uint8_t liniencounter= 0;
 #define END_D0             7           // Anschlagstatus:  Bit fuer Endanschlag bei D0
 
 
-#define HALT_PIN 0
+#define HALT_PIN           0
 
-#define COUNT_A				4		// Motorstatus:   Schritte von Motor A zaehlen
-#define COUNT_B				5		// Motorstatus:   Schritte von Motor B zaehlen
+#define COUNT_A				0 // 4		// Motorstatus:   Schritte von Motor A zaehlen
+#define COUNT_B				1 // 5		// Motorstatus:   Schritte von Motor B zaehlen
 
-#define COUNT_C				4		// Motorstatus:   Schritte von Motor C zaehlen
-#define COUNT_D				5		// Motorstatus:   Schritte von Motor D zaehlen
+#define COUNT_C				2 // 4		// Motorstatus:   Schritte von Motor C zaehlen
+#define COUNT_D				3 // 5		// Motorstatus:   Schritte von Motor D zaehlen
 
 
 
@@ -230,8 +230,9 @@ void slaveinit(void)
 	
 	STEPPERDDR_1 |= (1 << MA_RI);
 	STEPPERPORT_1 |= (1 << MA_RI);	// HI
+   
 	STEPPERDDR_1 |= (1 << MA_EN);
-	STEPPERPORT_1 &= ~(1 << MA_EN);   // LO
+//	STEPPERPORT_1 &= ~(1 << MA_EN);   // LO
 	STEPPERPORT_1 |= (1 << MA_EN);	// HI
 	
 	STEPPERDDR_1 |= (1 << MB_STEP);
@@ -371,6 +372,9 @@ ISR (TIMER2_OVF_vect)
 	{
 		CounterA-=1;
 		CounterB-=1;
+      CounterC-=1;
+      CounterD-=1;
+      
 		timer2Counter = 0; 
         //OSZI_B_TOGG ;
 	} 
@@ -703,7 +707,9 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	// Motor A
 	STEPPERPORT_1 &= ~(1<<MA_EN); // Pololu ON
 	
-//   STEPPERPORT_1 &= ~(1<<MC_EN); // Pololu ON
+   //
+   STEPPERPORT_2 &= ~(1<<MC_EN); // Pololu ON
+   //
    
    CounterA=0;
 	uint8_t dataL=0;
@@ -720,20 +726,31 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	{
 		richtung |= (1<<RICHTUNG_A); // Rueckwarts
 		STEPPERPORT_1 &= ~(1<< MA_RI);
-      
-		//lcd_putc('r');
+ 
+      //     
+      STEPPERPORT_2 &= ~(1<< MC_RI);
+ //     
+		
 	}
 	else 
 	{
 		richtung &= ~(1<<RICHTUNG_A);
 		STEPPERPORT_1 |= (1<< MA_RI);
 		//lcd_putc('v');	// Vorwaerts
+      
+      //
+      STEPPERPORT_2 |= (1<< MC_RI);
+      //
 	}
 	
 	dataH &= (0x7F);
 	StepCounterA= dataH;		// HByte
 	StepCounterA <<= 8;		// shift 8
 	StepCounterA += dataL;	// +LByte
+   
+//
+   StepCounterC = StepCounterA;
+//
 	
 	delayL=AbschnittDaten[4];
 	delayH=AbschnittDaten[5];
@@ -742,6 +759,8 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	DelayA = delayH;
 	DelayA <<=8;
 	DelayA += delayL;
+   
+   DelayC = DelayA;
    
    CounterA = DelayA;
    
@@ -762,12 +781,17 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
     lcd_putint(delayL);
     
     */
+   
+   
 	// Motor B
 	CounterB=0;
 	//STEPPERPORT_1 |= (1<<MB_EN);
 	STEPPERPORT_1 &= ~(1<<MB_EN);	// Pololu ON
    
-   
+   //
+   STEPPERPORT_2 &= ~(1<<MD_EN);	// Pololu ON
+
+   //
    
 	dataL=AbschnittDaten[2];
 	dataH=AbschnittDaten[3];
@@ -778,13 +802,22 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 		richtung |= (1<<RICHTUNG_B); // Rueckwarts
 		STEPPERPORT_1 &= ~(1<< MB_RI);
 		//lcd_putc('r');
-	}
+	//
+      STEPPERPORT_2 &= ~(1<< MD_RI);
+      //
+   
+   }
 	else 
 	{
 		richtung &= ~(1<<RICHTUNG_B);
 		STEPPERPORT_1 |= (1<< MB_RI);
 		//lcd_putc('v');
-	}
+	
+      //
+      STEPPERPORT_2 |= (1<< MD_RI);
+      //
+   
+   }
 	
 	dataH &= (0x7F);
 	StepCounterB= dataH;		// HByte
@@ -794,6 +827,11 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 	DelayB = (AbschnittDaten[7]<<8)+ AbschnittDaten[6];
    
    CounterB = DelayB;
+   
+   //
+   StepCounterD = StepCounterB;
+   CounterD = DelayB;
+   //
    
    if (StepCounterA > StepCounterB) // Hoeherer Wert setzt relevante Zaehlvariable
    {
@@ -1493,7 +1531,7 @@ uint16_t count=0;
       // **************************************
       
       // Es hat noch Steps, CounterC ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-      if (StepCounterC &&(CounterC == 0) &&(!((cncstatus & (1<< END_C0))||(cncstatus & (1<< END_D0)))))//	
+      if (StepCounterC &&(CounterC == 0))// &&(!((cncstatus & (1<< END_C0))||(cncstatus & (1<< END_D0)))))//	
       {
          cli();
          // Impuls starten
