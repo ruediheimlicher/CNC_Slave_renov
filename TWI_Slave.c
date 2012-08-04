@@ -1292,8 +1292,10 @@ uint16_t count=0;
          
          uint8_t code = 0x00;
          code = buffer[16];
-
-         {
+         switch (code)
+         {       
+         default:
+            {
             // Abschnittnummer bestimmen
             uint8_t indexh=buffer[18];
             uint8_t indexl=buffer[19];
@@ -1401,8 +1403,11 @@ uint16_t count=0;
                   }
                }
             
-         } 
+         } // default
+         
+      } // switch code
          sei();
+         
 		} // r>0, neue Daten
       
       /**	End USB-routinen	***********************/
