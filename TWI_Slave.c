@@ -604,6 +604,7 @@ uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
    motorstatus = AbschnittDaten[21];
    
    
+  
    return returnwert;
    
    // Nicht mehr verwendet, wird in Stepper berechnet
@@ -1388,6 +1389,14 @@ uint16_t count=0;
                         if (aktuellelage==2) // war letzter Abschnitt
                         {
                            endposition=abschnittnummer; // letzter Abschnitt
+                           
+                           // Neu: letzten Abschnitt melden
+                           sendbuffer[0]=0xD0;
+                           sendbuffer[5]=abschnittnummer;
+                           sendbuffer[6]=ladeposition;
+                           usb_rawhid_send((void*)sendbuffer, 50);
+                           sei();
+
                         }  
                         else
                         {
@@ -1482,9 +1491,14 @@ uint16_t count=0;
                   aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
-                     //lcd_gotoxy(14,1);
-                     //lcd_putc('^');
-                     endposition=abschnittnummer; // letzter Abschnitt
+                      endposition=abschnittnummer; // letzter Abschnitt
+                     // Neu: letzten Abschnitt melden
+                     sendbuffer[0]=0xD0;
+                     sendbuffer[5]=abschnittnummer;
+                     sendbuffer[6]=ladeposition;
+                     usb_rawhid_send((void*)sendbuffer, 50);
+                     sei();
+
                   }  
                   else
                   {
@@ -1582,9 +1596,14 @@ uint16_t count=0;
                   aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
-                     //lcd_gotoxy(14,1);
-                     //lcd_putc('^');
                      endposition=abschnittnummer; // letzter Abschnitt
+                     // Neu: letzten Abschnitt melden
+                     sendbuffer[0]=0xD0;
+                     sendbuffer[5]=abschnittnummer;
+                     sendbuffer[6]=ladeposition;
+                     usb_rawhid_send((void*)sendbuffer, 50);
+                     sei();
+
                   }  
                   else
                   {
@@ -1666,6 +1685,13 @@ uint16_t count=0;
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                      endposition=abschnittnummer; // letzter Abschnitt
+                     // Neu: letzten Abschnitt melden
+                     sendbuffer[0]=0xD0;
+                     sendbuffer[5]=abschnittnummer;
+                     sendbuffer[6]=ladeposition;
+                     usb_rawhid_send((void*)sendbuffer, 50);
+                     sei();
+
                   }  
                   else
                   {
