@@ -107,9 +107,14 @@ volatile uint8_t liniencounter= 0;
 #define LOAD_NEXT          5  // Bit fuer Laden des naechsten Abschnitts in der loop
 #define LOAD_LAST          6  // Bit fuer Laden des letzten Abschnitts in der loop
 
+// auf Stepperport 1
+#define END_A0_PIN          0       //  PIN fuer Endanschlag A0 
+#define END_B0_PIN          1 		//           Endanschlag B0 
 
-#define END_A0_PIN          0       //  Endanschlag A0 
-#define END_B0_PIN          1 		//  Endanschlag A1 
+
+// Auf Stepperport 2
+#define END_C0_PIN          6       //  PIN fuer Endanschlag C0 
+#define END_D0_PIN          7 		//           Endanschlag D0 
 
 
 #define RICHTUNG_A	0
@@ -284,12 +289,6 @@ void slaveinit(void)
  	LCD_DDR |= (1<<LCD_ENABLE_PIN);	//Pin 5 von PORT D als Ausgang fuer LCD
 	LCD_DDR |= (1<<LCD_CLOCK_PIN);	//Pin 6 von PORT D als Ausgang fuer LCD
 
-/*
-	DDRC &= ~(1<<PORTC4);	//Bit 4 von PORT C als Eingang fŸr SDA
-	PORTC |= (1<<PORTC4);	//Pull-up
-	DDRC &= ~(1<<PORTC5);	//Bit 5 von PORT C als Eingang fŸr SCL
-	PORTC |= (1<<PORTC5);	//Pull-up
-*/	
 	//Versuch mit init von CNC 12
 //	CMD_DDR &= ~(1<<END_A0_PIN);			//	Bit 0 von PORT B als Eingang fŸr Endanschlag A0
 //	CMD_PORT |= (1<<END_A0_PIN);			// Pull-up
@@ -302,6 +301,26 @@ void slaveinit(void)
 	
 //   DDRD |= (1<<PORTD6);
  //  PORTD |= (1<<PORTD6);
+   
+   
+   // Anschlaege
+   
+   STEPPERPORT_1 &= ~(1<<END_A0_PIN);			//	Eingang fŸr Endanschlag A0
+	STEPPERPORT_1 |= (1<<END_A0_PIN);			// Pull-up
+   
+	STEPPERPORT_1 &= ~(1<<END_B0_PIN);			//	Eingang fŸr Endanschlag B0
+	STEPPERPORT_1 |= (1<<END_B0_PIN);			// Pull-up
+   
+   
+   STEPPERDDR_2 &= ~(1<<END_C0_PIN);			//	Eingang fŸr Endanschlag C0
+	STEPPERPORT_2 |= (1<<END_C0_PIN);			// Pull-up
+   
+   STEPPERDDR_2 &= ~(1<<END_D0_PIN);			//	Eingang fŸr Endanschlag D0
+	STEPPERPORT_2 |= (1<<END_D0_PIN);			// Pull-up
+   
+
+   
+   
    CMD_DDR |= (1<<DC);                       // DC-PWM-Ausgang
    CMD_PORT &= ~(1<<DC);                      // LO
    
@@ -1271,54 +1290,47 @@ uint16_t count=0;
          //OSZI_B_HI;
          cli(); 
          
-         {
-            //abschnittnummer=0;
- //           uint8_t indexh=buffer[10];
- //           uint8_t indexl=buffer[11];
+         uint8_t code = 0x00;
+         code = buffer[16];
 
-            //
+         {
+            // Abschnittnummer bestimmen
             uint8_t indexh=buffer[18];
             uint8_t indexl=buffer[19];
-            //
-            
             
             abschnittnummer= indexh<<8;
             abschnittnummer += indexl;
-            //lcd_gotoxy(0,0);
-            //lcd_putint2(indexh);
-            //lcd_putint2(indexl);
-            sendbuffer[0]=0x00;
-            sendbuffer[5]=0x00;
-            sendbuffer[6]=0x00;
-
- //           usb_rawhid_send((void*)sendbuffer, 50);
- //           sendbuffer[0]=0x00;
- //           sendbuffer[5]=0x00;
- //           sendbuffer[6]=0x00;
 
 
-            
+ //          usb_rawhid_send((void*)sendbuffer, 50);
                
                if (abschnittnummer==0)
                {
-                  //lcd_clr_line(0);
-                  //lcd_clr_line(1);
-                  //lcd_putc('a'+ liniencounter++);
-                  //lcd_puthex(endposition);
-                  //lcd_putint2(abschnittnummer);
                   cli();
                   ladeposition=0;
                   endposition=0xFFFF;
                   cncstatus=0;
                   motorstatus = 0;
                   ringbufferstatus=0x00;
-                  //lcd_puthex(ladeposition);
-                  //lcd_puthex(endposition);
-                  //lcd_puthex(ringbufferstatus);
+                  anschlagstatus=0;
                   ringbufferstatus |= (1<<FIRSTBIT);
                   AbschnittCounter=0;
+                  sendbuffer[5]=0x00;
                   //lcd_gotoxy(0,0);
                   
+                  if (code == 0xF0) // cncstatus fuer go_home setzen
+                  {
+                     sendbuffer[5]=0xF0;
+                     sendbuffer[0]=0x45;
+                     cncstatus |= (1<<GO_HOME); // Bit fuer go_home setzen
+                  }
+                  else
+                  {
+                     sendbuffer[0]=0x44;
+                     cncstatus &= ~(1<<GO_HOME); // Bit fuer go_home zuruecksetzen
+                  }
+                  usb_rawhid_send((void*)sendbuffer, 50);
+
                   sei();
                   
                }
