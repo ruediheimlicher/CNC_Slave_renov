@@ -734,7 +734,7 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
 		richtung &= ~(1<<RICHTUNG_A);
 		STEPPERPORT_1 |= (1<< MA_RI);
 		//lcd_putc('v');	// Vorwaerts
-      
+   }   
 	
 	dataH &= (0x7F);
 	StepCounterA= dataH;		// HByte
@@ -785,14 +785,14 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
    
    if (StepCounterA > StepCounterB) // Hoeherer Wert setzt relevante Zaehlvariable
    {
-      cncstatus |= (1 << COUNT_A); // Schritte von Motor A zaehlen 
-      cncstatus &= ~(1 << COUNT_B);// Bit von Motor B zuruecksetzen
+      motorstatus |= (1 << COUNT_A); // Schritte von Motor A zaehlen 
+      motorstatus &= ~(1 << COUNT_B);// Bit von Motor B zuruecksetzen
       //lcd_putc('A');
    }
    else
    {
-      cncstatus |= (1 << COUNT_B); // Schritte von Motor B zaehlen 
-      cncstatus &= ~(1 << COUNT_A);// Bit von Motor A zuruecksetzen
+      motorstatus |= (1 << COUNT_B); // Schritte von Motor B zaehlen 
+      motorstatus &= ~(1 << COUNT_A);// Bit von Motor A zuruecksetzen
       //lcd_putc('B');
    }
    
@@ -1183,6 +1183,7 @@ uint16_t count=0;
                   ladeposition=0;
                   endposition=0xFFFF;
                   cncstatus=0;
+                  motorstatus = 0;
                   ringbufferstatus=0x00;
                   //lcd_puthex(ladeposition);
                   //lcd_puthex(endposition);
@@ -1303,8 +1304,8 @@ uint16_t count=0;
             {
                //lcd_putc('a');
                 cncstatus |= (1<< END_A0);      // Bit fuer Anschlag A0 setzen
-                cncstatus &= ~(1<< COUNT_A);    // Motor A als relevant zuruecksetzen
-                cncstatus |= (1<< COUNT_B);     // Motor B als relevant setzen
+                motorstatus &= ~(1<< COUNT_A);    // Motor A als relevant zuruecksetzen
+                motorstatus |= (1<< COUNT_B);     // Motor B als relevant setzen
             }
         }
       
@@ -1318,8 +1319,8 @@ uint16_t count=0;
          if (richtung & (1<<RICHTUNG_B)) // Richtung ist auf Anschlag A1 zu, 
          {
             cncstatus |= (1<< END_B0);      // Bit fuer Anschlag B0 setzen
-            cncstatus &= ~(1<< COUNT_B);    // Motor B als relevant zuruecksetzen
-            cncstatus |= (1<< COUNT_A);     // Motor A als relevant setzen
+            motorstatus &= ~(1<< COUNT_B);    // Motor B als relevant zuruecksetzen
+            motorstatus |= (1<< COUNT_A);     // Motor A als relevant setzen
 
             //lcd_putc(' ');
          }
@@ -1348,7 +1349,7 @@ uint16_t count=0;
                StepCounterA--;
                
                // Wenn StepCounterA abgelaufen und relevant: next Datenpaket abrufen
-               if (StepCounterA ==0 && (cncstatus & (1<< COUNT_A)))    // Motor A ist relevant fuer Stepcount 
+               if (StepCounterA ==0 && (motorstatus & (1<< COUNT_A)))    // Motor A ist relevant fuer Stepcount 
                {
                   
                   STEPPERPORT_1 |= (1<<MA_EN);                          // Motor A OFF
@@ -1363,6 +1364,7 @@ uint16_t count=0;
                       
                      ringbufferstatus = 0;
                      cncstatus=0;
+                     motorstatus=0;
                      sendbuffer[0]=0xAD;
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
@@ -1449,7 +1451,7 @@ uint16_t count=0;
 			CounterB= DelayB;
 			StepCounterB--;
          
-			if (StepCounterB ==0 && (cncstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
+			if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
 			{
 				STEPPERPORT_1 |= (1<<MB_EN);					// Motor B OFF
 				
@@ -1462,6 +1464,7 @@ uint16_t count=0;
                
                ringbufferstatus = 0;
                cncstatus=0;
+               motorstatus=0;
                sendbuffer[0]=0xAD;
                sendbuffer[1]=abschnittnummer;
                usb_rawhid_send((void*)sendbuffer, 50);
@@ -1541,7 +1544,7 @@ uint16_t count=0;
          StepCounterC--;
          
          // Wenn StepCounterC abgelaufen und relevant: next Datenpaket abrufen
-         if (StepCounterC ==0 && (cncstatus & (1<< COUNT_C)))    // Motor A ist relevant fuer Stepcount 
+         if (StepCounterC ==0 && (motorstatus & (1<< COUNT_C)))    // Motor A ist relevant fuer Stepcount 
          {
             
             STEPPERPORT_2 |= (1<<MC_EN);                          // Motor C OFF
@@ -1555,6 +1558,7 @@ uint16_t count=0;
                
                ringbufferstatus = 0;
                cncstatus=0;
+               motorstatus=0;
                sendbuffer[0]=0xAD;
                sendbuffer[5]=abschnittnummer;
                sendbuffer[6]=ladeposition;
@@ -1630,7 +1634,7 @@ uint16_t count=0;
 			CounterD= DelayD;
 			StepCounterD--;
          
-			if (StepCounterD ==0 && (cncstatus & (1<< COUNT_D))) // Motor D ist relevant fuer Stepcount 
+			if (StepCounterD ==0 && (motorstatus & (1<< COUNT_D))) // Motor D ist relevant fuer Stepcount 
 			{
 				STEPPERPORT_2 |= (1<<MD_EN);					// Motor D OFF
 				
@@ -1642,6 +1646,7 @@ uint16_t count=0;
                
                ringbufferstatus = 0;
                cncstatus=0;
+               motorstatus=0;
                sendbuffer[0]=0xAD;
                sendbuffer[1]=abschnittnummer;
                usb_rawhid_send((void*)sendbuffer, 50);
