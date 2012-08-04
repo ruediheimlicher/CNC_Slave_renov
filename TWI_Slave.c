@@ -993,7 +993,7 @@ void AbschnittEndVonMotor(const uint8_t derstatus) // 0 - 3 fuer A - D   52 us
          aktuelleladeposition &= 0x03; // Position im Ringbuffer
          // aktuellen Abschnitt laden
          
-         aktuellelage = AbschnittLaden((uint8_t*)CNCDaten[aktuelleladeposition]); //gibt Lage zurueck: 1: Anfang, 2: Ende, 0; innerhalb
+         aktuellelage = AbschnittLaden_4M((uint8_t*)CNCDaten[aktuelleladeposition]); //gibt Lage zurueck: 1: Anfang, 2: Ende, 0; innerhalb
          uint8_t aktuellermotor = motor;
          aktuellermotor <<=6;
          cncstatus |= aktuellermotor;
@@ -1276,7 +1276,7 @@ uint16_t count=0;
          ladeposition=0;
          AbschnittCounter=0;
          // Ersten Abschnitt laden
-         uint8_t pos=AbschnittLaden(CNCDaten[0]); 
+         uint8_t pos=AbschnittLaden_4M(CNCDaten[0]); 
          ladeposition++;
          if (pos==2) // nur ein Abschnitt
          {
@@ -1384,7 +1384,7 @@ uint16_t count=0;
                         {
                            //lcd_putint1(ladeposition);
                         }
-                        aktuellelage = AbschnittLaden(CNCDaten[aktuelleladeposition]);
+                        aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                         if (aktuellelage==2) // war letzter Abschnitt
                         {
                            endposition=abschnittnummer; // letzter Abschnitt
@@ -1479,7 +1479,7 @@ uint16_t count=0;
                   aktuelleladeposition &= 0x03;
  
                   // aktuellen Abschnitt laden
-                  aktuellelage = AbschnittLaden(CNCDaten[aktuelleladeposition]);
+                  aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                      //lcd_gotoxy(14,1);
@@ -1579,7 +1579,7 @@ uint16_t count=0;
                   {
                      //lcd_putint1(ladeposition);
                   }
-                  aktuellelage = AbschnittLaden(CNCDaten[aktuelleladeposition]);
+                  aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                      //lcd_gotoxy(14,1);
@@ -1662,7 +1662,7 @@ uint16_t count=0;
                   
                   // aktuellen Abschnitt laden
                   
-                  aktuellelage = AbschnittLaden(CNCDaten[aktuelleladeposition]);
+                  aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                      endposition=abschnittnummer; // letzter Abschnitt
@@ -1769,7 +1769,6 @@ uint16_t count=0;
                //lcd_putint(TastenStatus);
                
                
- 					cncstatus |= (1<<TASTE0); // cncstatus &= ~(1<<TASTE0); ??
 				}
 			}//else
 			
