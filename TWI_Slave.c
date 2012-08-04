@@ -1035,6 +1035,132 @@ void AbschnittEndVonMotor(const uint8_t derstatus) // 0 - 3 fuer A - D   52 us
    
 }
 
+
+void AnschlagVonMotor(const uint8_t motor)
+{
+   //lcd_gotoxy(0,1);
+   //lcd_putc('A');
+   //lcd_gotoxy(2+2*motor,1);
+   //lcd_puthex(motor);
+   if (richtung & (1<<(RICHTUNG_A + motor))) // Richtung ist auf Anschlag A0 zu         
+   {
+      
+      if (!(anschlagstatus &(1<< (END_A0 + motor))))
+      {
+         cli();
+         
+         anschlagstatus |= (1<< (END_A0 + motor));      // Bit fuer Anschlag A0+motor setzen
+         //lcd_putc('A');
+         
+         
+         if (cncstatus & (1<<GO_HOME)) // nur eigene Seite abstellen
+         {
+            
+            // Paralleler Schlitten gleichzeitig am Anschlag?
+            switch (motor) // Stepperport 1
+            {
+               case 0:
+               {
+                  
+               }
+                  
+                  
+            }//switch motor
+            
+            //lcd_putc('B');
+            sendbuffer[0]=0xB5 + motor;
+            
+            cncstatus |= (1<<motor);
+            
+            if (motor<2) // Stepperport 1
+            {
+               STEPPERPORT_1 |= (1<<(MA_EN + motor));     // Motor 0,1 OFF
+               //STEPPERPORT_2 |= (1<<(MA_EN + motor + 2)); // Paralleler Motor 2,3 OFF
+               StepCounterA=0;
+               StepCounterB=0;
+               //               CounterA=0xFFFF;
+               //              CounterB=0xFFFF;
+               
+            }
+            else // Stepperport 2
+            {
+               STEPPERPORT_2 |= (1<<(MA_EN + motor));     // Motor 2,3 OFF
+               //STEPPERPORT_1 |= (1<<(MA_EN + motor - 2)); // Paralleler Motor 0,1 OFF
+               StepCounterC=0;
+               StepCounterD=0;
+               //               CounterC=0xFFFF;
+               //               CounterD=0xFFFF;
+            }
+            //cncstatus &= ~(1<<GO_HOME);
+            
+         }
+         else           // beide Seiten abstellen
+         {    
+            cncstatus=0;
+            sendbuffer[0]=0xA5 + motor;
+            
+            if (motor<2) // Stepperport 1
+            {
+               STEPPERPORT_1 |= (1<<(MA_EN + motor));     // Motor 0,1 OFF
+               STEPPERPORT_2 |= (1<<(MA_EN + motor + 2)); // Paralleler Motor 2,3 OFF
+            }
+            else // Stepperport 2
+            {
+               STEPPERPORT_2 |= (1<<(MA_EN + motor));     // Motor 2,3 OFF
+               STEPPERPORT_1 |= (1<<(MA_EN + motor - 2)); // Paralleler Motor 0,1 OFF
+            }
+            
+            // Alles abstellen
+            StepCounterA=0;
+            StepCounterB=0;
+            StepCounterC=0;
+            StepCounterD=0;
+            
+            /*
+             CounterA=0xFFFF;
+             CounterB=0xFFFF;
+             CounterC=0xFFFF;
+             CounterD=0xFFFF;
+             */
+            
+            ladeposition=0;
+            motorstatus=0;
+            
+         }
+         
+         sendbuffer[5]=abschnittnummer;
+         sendbuffer[6]=ladeposition;
+         sendbuffer[7]=cncstatus;
+         usb_rawhid_send((void*)sendbuffer, 50);
+         sei();
+         
+         
+         //ladeposition=0;
+         // motorstatus=0;
+         
+         richtung &= ~(1<<(RICHTUNG_A + motor)); // Richtung umschalten
+         
+         
+         sei();
+      } // NOT END_A0
+      else
+      {
+         
+      }
+      
+   }
+   else 
+   {
+      if (!(anschlagstatus &(1<< (END_A0 + motor))))
+         
+      {
+         anschlagstatus &= ~(1<< (END_A0 + motor)); // Bit fuer Anschlag B0 zuruecksetzen
+      }
+      
+   }
+   
+}
+
 uint8_t RingbufferLaden(const uint8_t outpos )
 {
    uint8_t lage=0;
@@ -1340,7 +1466,7 @@ uint16_t count=0;
       // **************************************
    
       // Es hat noch Steps, CounterA ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-            if (StepCounterA &&(CounterA == 0) &&(!((cncstatus & (1<< END_A0))||(cncstatus & (1<< END_B0)))))//	
+            if (StepCounterA &&(CounterA == 0) &&(!(cncstatus & (1<< END_A0))))//||(cncstatus & (1<< END_B0)))))//	
             {
                 cli();
                // Impuls starten
@@ -1451,7 +1577,7 @@ uint16_t count=0;
       // * Motor B *
       // **************************************
       
-		if (StepCounterB && (CounterB == 0))
+		if (StepCounterB && (CounterB == 0)&&(!(cncstatus & (1<< END_B0))))
 		{
          cli();
          //lcd_putc('B');
@@ -1547,7 +1673,7 @@ uint16_t count=0;
       // **************************************
       
       // Es hat noch Steps, CounterC ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-      if (StepCounterC &&(CounterC == 0))// &&(!((cncstatus & (1<< END_C0))||(cncstatus & (1<< END_D0)))))//	
+      if (StepCounterC &&(CounterC == 0) &&(!(cncstatus & (1<< END_C0))))//||(cncstatus & (1<< END_D0)))))//	
       {
          cli();
          // Impuls starten
@@ -1645,7 +1771,7 @@ uint16_t count=0;
       // * Motor D *
       // **************************************
       
-		if (StepCounterD && (CounterD == 0))
+		if (StepCounterD && (CounterD == 0)&&(!(cncstatus & (1<< END_D0))))
 		{
          cli();
          
