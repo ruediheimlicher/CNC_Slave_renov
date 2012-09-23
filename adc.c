@@ -16,7 +16,7 @@ struct adcwert16 ADCWert16;
 
 struct adcwert16 readKanal16Bit(uint8_t kanal)
 {
-	uint8_t i;
+	
 	struct adcwert16 tempWert;
 	tempWert.wertH=0;
 	tempWert.wertL=0;

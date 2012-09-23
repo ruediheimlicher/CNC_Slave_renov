@@ -502,7 +502,7 @@ uint8_t frac  : Anzahl der Nachkommastellen
 {
 	//char string[5];
 	char string[3];
-	uint8_t i,l,h;                             // schleifenzähler
+	uint8_t l,h;                             // schleifenzähler
 	
 	string[2]='\0';                       // String Terminator
 	l=(zahl % 16);
@@ -559,7 +559,7 @@ void lcd_put_frac(char* string, uint8_t start, uint8_t komma, uint8_t frac)
 void lcd_put_zeit(uint8_t minuten, uint8_t stunden)
 {
 	//							13:15
-	int8_t i; 
+	
 	if (stunden< 10)
 	{
 		//	lcd_putc(' ');

@@ -222,6 +222,27 @@ volatile uint16_t StepCounterD=0;	// Zaehler fuer Schritte von Motor D
 
 volatile uint8_t richtung=0;
 
+
+
+void startTimer2(void)
+{
+   //timer2
+   TCNT2   = 0; 
+   //	TCCR2A |= (1 << WGM21);    // Configure timer 2 for CTC mode 
+   TCCR2B |= (1 << CS20);     // Start timer at Fcpu/8 
+   //	TIMSK2 |= (1 << OCIE2A);   // Enable CTC interrupt 
+   TIMSK2 |= (1 << TOIE2);    // Enable OV interrupt 
+   //OCR2A   = 5;             // Set CTC compare value with a prescaler of 64 
+   TCCR2A = 0x00;
+   
+   sei();
+}
+
+void stopTimer2(void)
+{
+   TCCR2B = 0;
+}
+
 void slaveinit(void)
 {
 	//OSZIPORTDDR |= (1<<PULS);	// Output
@@ -299,8 +320,8 @@ void slaveinit(void)
 //	CMD_DDR &= ~(1<<PORTB1);			// Bit 1 von PORT B als Eingang fŸr Taste 1
 //	CMD_PORT |= (1<<PORTB1);			//	Pull-up
 	
-//   DDRD |= (1<<PORTD6);
- //  PORTD |= (1<<PORTD6);
+   DDRD |= (1<<PORTD6);
+  PORTD |= (1<<PORTD6);
    
    
    // Anschlaege
@@ -386,14 +407,33 @@ volatile uint16_t timer2Counter=0;
 ISR (TIMER2_OVF_vect) 
 { 
 	timer2Counter +=1;
-	
+   
+   if (PWM) // Draht soll heiss sein. 
+   {
+   }
+   else
+   {
+      pwmposition =0;
+   }
+
 	if (timer2Counter >= 14) 
 	{
+       
+
 		CounterA-=1;
 		CounterB-=1;
       CounterC-=1;
       CounterD-=1;
       
+      if (PWM)
+      {
+         pwmposition ++;
+      }
+      else
+      {
+         pwmposition =0;
+      }
+
 		timer2Counter = 0; 
         //OSZI_B_TOGG ;
 	} 
@@ -422,7 +462,7 @@ void DatenLadenAnPosition(uint16_t diePosition)
 
 uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
 {
-   
+    stopTimer2();
 	uint8_t returnwert=0;
 	/*			
 	 Reihenfolge der Daten:
@@ -622,6 +662,7 @@ uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
    // motorstatus: welcher Motor ist relevant
    motorstatus = AbschnittDaten[21];
    
+   startTimer2();
    
   
    return returnwert;
@@ -1187,26 +1228,7 @@ uint8_t RingbufferLaden(const uint8_t outpos )
    return lage;
 }
 
-
-void startTimer2(void)
-{
-   //timer2
-   TCNT2   = 0; 
-   //	TCCR2A |= (1 << WGM21);    // Configure timer 2 for CTC mode 
-   TCCR2B |= (1 << CS20);     // Start timer at Fcpu/8 
-   //	TIMSK2 |= (1 << OCIE2A);   // Enable CTC interrupt 
-   TIMSK2 |= (1 << TOIE2);    // Enable OV interrupt 
-   //OCR2A   = 5;             // Set CTC compare value with a prescaler of 64 
-   TCCR2A = 0x00;
-   
-   sei();
-}
-
-void stopTimer2(void)
-{
-   TCCR2B = 0;
-}
-
+#pragma mark - main
 int main (void) 
 {
     int8_t r;
@@ -1278,11 +1300,20 @@ uint16_t count=0;
 
 	  sei();
    
+   PWM = 0;
    
-	  
+   char* versionstring = (char*) malloc(4);
+   strncpy(versionstring, VERSION+9, 3);
+   versionstring[3]='\0';
+   volatile uint16_t versionint = atoi(versionstring);
+   volatile uint8_t versionintl = versionint & 0x00FF;
+   //versionint >>=8;
+   volatile uint8_t versioninth = (versionint & 0xFF00)>>8;
+   
+   
 #pragma mark while	  
 	while (1)
-	{	
+	{
       
       //OSZI_B_LO;
 		//Blinkanzeige
@@ -1292,7 +1323,7 @@ uint16_t count=0;
 			loopcount0=0;
 			loopcount1+=1;
 			LOOPLEDPORT ^=(1<<LOOPLED);
-         //PORTD ^= (1<<PORTD6);
+         PORTD ^= (1<<PORTD6);
 			//
 			//STEPPERPORT_1 ^= (1 << MA_STEP);
 			//PORTD ^= (1<<0);
@@ -1300,7 +1331,36 @@ uint16_t count=0;
 			//lcd_puthex(loopcount1);
 			//timer0();
 		}
+      
+      /**	HOT	***********************/
+      /*
+       pwmposition wird in der ISR incrementiert. Wenn pwmposition > ist als der eingestellte Wert PWM, wird der Impuls wieder abgeschaltet. Nach dem Overflow wird wieder eingeschaltet
+       */
+      
+      
+      if (PWM) // Draht soll heiss sein, PWM >0. 
+      {
+         
+         if (pwmposition > PWM) // > DC OFF, PIN ist LO
+         {
+            CMD_PORT &= ~(1<<DC);
+            //OSZI_A_HI ;
+         }
+         else                    // > DC ON, PIN ist HI
+         {
+            CMD_PORT |= (1<<DC);
+            //OSZI_A_LO ;
+            
+         }
+         
+      }
+      else
+      {
+         CMD_PORT &= ~(1<<DC); // Draht ausschalten
+      }
+
 		
+      
        /**	Begin USB-routinen	***********************/
       
         // Start USB
@@ -1450,7 +1510,7 @@ uint16_t count=0;
                //sendbuffer[0]=0x00;
                
             }break;
-               
+#pragma mark default
             default:
             {
                // Abschnittnummer bestimmen
@@ -1462,6 +1522,9 @@ uint16_t count=0;
                sendbuffer[0]=0x33;
                sendbuffer[5]=abschnittnummer;
                sendbuffer[6]=buffer[16];
+               
+               sendbuffer[8]= versionintl;
+               sendbuffer[9]= versioninth;
                usb_rawhid_send((void*)sendbuffer, 50);
                
                if (abschnittnummer==0)
@@ -1478,9 +1541,12 @@ uint16_t count=0;
                   anschlagstatus=0;
                   ringbufferstatus |= (1<<FIRSTBIT);
                   AbschnittCounter=0;
+                  //sendbuffer[8]= versionintl;
+                  //sendbuffer[8]= versioninth;
                   sendbuffer[5]=0x00;
                   //lcd_gotoxy(0,0);
                   
+                   
                   if (code == 0xF0) // cncstatus fuer go_home setzen
                   {
                      sendbuffer[5]=0xF0;
@@ -1537,6 +1603,17 @@ uint16_t count=0;
                {
                   {
                      //lcd_putc('*');
+                     // Version zurueckmelden
+                     
+                     int versionl, versionh;
+                     
+                     //versionl=VERSION & 0xFF;
+                     //versionh=((VERSION >> 8) & 0xFF);
+
+                     
+                     
+                     
+                     
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
                      sendbuffer[0]=0xAF;
@@ -1581,7 +1658,7 @@ uint16_t count=0;
          ladeposition=0;
          AbschnittCounter=0;
          // Ersten Abschnitt laden
-         uint8_t pos=AbschnittLaden(CNCDaten[0]); 
+         uint8_t pos=AbschnittLaden_4M(CNCDaten[0]); 
          ladeposition++;
          if (pos==2) // nur ein Abschnitt
          {
@@ -1638,7 +1715,7 @@ uint16_t count=0;
       // End Anschlag B0
       */
       
-      
+#pragma mark Anschlag
       // ********************
       // * Anschlag Motor A *
       // ********************
@@ -1708,7 +1785,7 @@ uint16_t count=0;
          AnschlagVonMotor(3);
       }
 
-      
+#pragma mark Motor      
       // Begin Motor A
       // **************************************
       // * Motor A *
@@ -1720,18 +1797,31 @@ uint16_t count=0;
                 cli();
                // Impuls starten
                STEPPERPORT_1 &= ~(1<<MA_STEP);   // Impuls an Motor A LO -> ON
-               CounterA=DelayA;                     // CounterA zuruecksetzen fuer neuen Impuls
+               CounterA = DelayA;                     // CounterA zuruecksetzen fuer neuen Impuls
                
                StepCounterA--;
                
                // Wenn StepCounterA abgelaufen und relevant: next Datenpaket abrufen
-               if (StepCounterA ==0 && (motorstatus & (1<< COUNT_A)))    // Motor A ist relevant fuer Stepcount 
+               if (StepCounterA == 0 && (motorstatus & (1<< COUNT_A)))    // Motor A ist relevant fuer Stepcount
                {
                   
-                  STEPPERPORT_1 |= (1<<MA_EN);                          // Motor A OFF
-                  //STEPPERPORT_1 |= (1<<MB_EN);
-                  StepCounterB=0; 
+  //                STEPPERPORT_1 |= (1<<MA_EN);                          // Motor A OFF
+                  //STEPPERPORT_2 |= (1<<MC_EN);
+                  //StepCounterB=0; 
                   
+                  //
+                  /*
+                  StepCounterA=0;
+                  StepCounterB=0;
+                  StepCounterC=0;
+                  StepCounterD=0;
+                  
+                  CounterA=0;
+                  CounterB=0;
+                  CounterC=0;
+                  CounterD=0;
+                   */
+                  //
                   // Begin Ringbuffer-Stuff
                   //if (ringbufferstatus & (1<<ENDBIT))
                   if (abschnittnummer==endposition)
@@ -1764,7 +1854,7 @@ uint16_t count=0;
                         if (aktuellelage==2) // war letzter Abschnitt
                         {
                            endposition=abschnittnummer; // letzter Abschnitt
-                           
+
                            // Neu: letzten Abschnitt melden
                            sendbuffer[0]=0xD0;
                            sendbuffer[5]=abschnittnummer;
@@ -1837,9 +1927,9 @@ uint16_t count=0;
          
 			if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
 			{
-				STEPPERPORT_1 |= (1<<MB_EN);					// Motor B OFF
+//				STEPPERPORT_1 |= (1<<MB_EN);					// Motor B OFF
 				
-            StepCounterA=0;
+            //StepCounterA=0;
             //lcd_putc('-');
             // Begin Ringbuffer-Stuff
             if (abschnittnummer==endposition)
@@ -1867,6 +1957,7 @@ uint16_t count=0;
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                       endposition=abschnittnummer; // letzter Abschnitt
+                     
                      // Neu: letzten Abschnitt melden
                      sendbuffer[0]=0xD0;
                      sendbuffer[5]=abschnittnummer;
@@ -1937,8 +2028,8 @@ uint16_t count=0;
          if (StepCounterC ==0 && (motorstatus & (1<< COUNT_C)))    // Motor A ist relevant fuer Stepcount 
          {
             
-            STEPPERPORT_2 |= (1<<MC_EN);                          // Motor C OFF
-            StepCounterD=0; 
+//            STEPPERPORT_2 |= (1<<MC_EN);                          // Motor C OFF
+            //StepCounterD=0; 
             
             // Begin Ringbuffer-Stuff
             //if (ringbufferstatus & (1<<ENDBIT))
@@ -2032,9 +2123,9 @@ uint16_t count=0;
          
 			if (StepCounterD ==0 && (motorstatus & (1<< COUNT_D))) // Motor D ist relevant fuer Stepcount 
 			{
-				STEPPERPORT_2 |= (1<<MD_EN);					// Motor D OFF
+//				STEPPERPORT_2 |= (1<<MD_EN);					// Motor D OFF
 				
-            StepCounterC=0;
+            //StepCounterC=0;
             // Begin Ringbuffer-Stuff
             if (abschnittnummer==endposition)
             {  
