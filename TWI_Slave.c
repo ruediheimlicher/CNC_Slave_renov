@@ -1785,7 +1785,7 @@ uint16_t count=0;
          AnschlagVonMotor(3);
       }
 
-#pragma mark Motor      
+#pragma mark Motor A    
       // Begin Motor A
       // **************************************
       // * Motor A *
@@ -2008,7 +2008,7 @@ uint16_t count=0;
       // End Motor B
       
       // Begin Motor C
-      
+#pragma mark Motor C
       // **************************************
       // * Motor C *
       // **************************************
@@ -2208,7 +2208,7 @@ uint16_t count=0;
 		/* **** rx_buffer abfragen **************** */
 		//rxdata=0;
 		
-#pragma mark rxdata		
+#pragma mark Tasten		
 		//	Daten von USB vorhanden
 		 // rxdata
 		
