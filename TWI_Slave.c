@@ -1529,6 +1529,7 @@ uint16_t count=0;
                
                if (abschnittnummer==0)
                {
+                  lcd_clr_line(1);
                   cli();
                   
                   startTimer2();
@@ -1824,10 +1825,9 @@ uint16_t count=0;
                   //
                   // Begin Ringbuffer-Stuff
                   //if (ringbufferstatus & (1<<ENDBIT))
-                  if (abschnittnummer==endposition)
+                  if (abschnittnummer==endposition) // Abschnitt fertig
                   {  
                      cli();
-                      
                      ringbufferstatus = 0;
                      cncstatus=0;
                      motorstatus=0;
@@ -1839,50 +1839,46 @@ uint16_t count=0;
                      sei();
                   }
                   else 
-                  { 
+                  {
                      uint8_t aktuellelage=0; // Lage innerhalb der Abschnittserie: Start: 1, Innerhalb: 0, Ende: 2
+                     
+                     uint8_t aktuelleladeposition=(ladeposition & 0x00FF);
+                     aktuelleladeposition &= 0x03;
+                     
+                     // aktuellen Abschnitt laden
+                      aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
+                     if (aktuellelage==2) // war letzter Abschnitt
                      {
-                        uint8_t aktuelleladeposition=(ladeposition & 0x00FF);
-                        aktuelleladeposition &= 0x03;
-
-                        // aktuellen Abschnitt laden
-                        if (ladeposition>8)
-                        {
-                           //lcd_putint1(ladeposition);
-                        }
-                        aktuellelage = AbschnittLaden_4M(CNCDaten[aktuelleladeposition]);
-                        if (aktuellelage==2) // war letzter Abschnitt
-                        {
-                           endposition=abschnittnummer; // letzter Abschnitt
-
-                           // Neu: letzten Abschnitt melden
-                           sendbuffer[0]=0xD0;
-                           sendbuffer[5]=abschnittnummer;
-                           sendbuffer[6]=ladeposition;
-                           usb_rawhid_send((void*)sendbuffer, 50);
-                           sei();
-
-                        }  
-                        else
-                        {
-                           // neuen Abschnitt abrufen
-                           sendbuffer[5]=abschnittnummer;
-                           sendbuffer[6]=ladeposition;
-                           sendbuffer[0]=0xA1;
-                           usb_rawhid_send((void*)sendbuffer, 50);
-                        }
+                        endposition=abschnittnummer; // letzter Abschnitt
                         
-                        ladeposition++;
+                        // Neu: letzten Abschnitt melden
+                        sendbuffer[0]=0xD0;
+                        sendbuffer[5]=abschnittnummer;
+                        sendbuffer[6]=ladeposition;
+                        usb_rawhid_send((void*)sendbuffer, 50);
+                        sei();
                         
                      }
+                     else
+                     {
+                        // neuen Abschnitt abrufen
+                        sendbuffer[5]=abschnittnummer;
+                        sendbuffer[6]=ladeposition;
+                        sendbuffer[0]=0xA1;
+                        usb_rawhid_send((void*)sendbuffer, 50);
+                     }
+                     
+                     ladeposition++;
+                     
+                     
                      
                      
                      if (aktuellelage==2)
                      {
                         //ringbufferstatus |= (1<<ENDBIT);
                      }
-                      AbschnittCounter++;
-
+                     AbschnittCounter++;
+                     
                   }
                   
                }
