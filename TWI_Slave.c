@@ -1525,7 +1525,7 @@ uint16_t count=0;
                
                sendbuffer[8]= versionintl;
                sendbuffer[9]= versioninth;
- //              usb_rawhid_send((void*)sendbuffer, 50);
+ //              usb_rawhid_send((void*)sendbuffer, 50); // nicht jedes Paket melden
                
                if (abschnittnummer==0)
                {
