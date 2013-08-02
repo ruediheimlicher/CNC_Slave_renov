@@ -8,6 +8,8 @@ uint8_t usb_configured(void);		// is the USB port configured
 int8_t usb_rawhid_recv(uint8_t *buffer, uint8_t timeout);  // receive a packet, with timeout
 int8_t usb_rawhid_send(const uint8_t *buffer, uint8_t timeout); // send a packet, with timeout
 
+volatile uint8_t hidstatus=0;
+
 // This file does not include the HID debug functions, so these empty
 // macros replace them with nothing, so users can compile code that
 // has calls to these functions.

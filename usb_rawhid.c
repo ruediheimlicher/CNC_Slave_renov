@@ -54,6 +54,23 @@
 #define RAWHID_RX_INTERVAL	8	// max # of ms between receive packets
 
 
+
+#define OSZIPORT           PORTD
+#define OSZIPORTDDR        DDRD
+#define OSZIPORTPIN        PIND
+#define OSZI_PULS_A        0
+#define OSZI_PULS_B        1
+
+#define OSZI_A_LO OSZIPORT &= ~(1<<OSZI_PULS_A)
+#define OSZI_A_HI OSZIPORT |= (1<<OSZI_PULS_A)
+#define OSZI_A_TOGG OSZIPORT ^= (1<<OSZI_PULS_A)
+
+
+#define OSZI_B_LO OSZIPORT &= ~(1<<OSZI_PULS_B)
+#define OSZI_B_HI OSZIPORT |= (1<<OSZI_PULS_B)
+#define OSZI_B_TOGG OSZIPORT ^= (1<<OSZI_PULS_B)
+
+
 /**************************************************************************
  *
  *  Endpoint Buffer Configuration
@@ -282,7 +299,7 @@ uint8_t usb_configured(void)
 int8_t usb_rawhid_recv(uint8_t *buffer, uint8_t timeout)
 {
 	uint8_t intr_state;
-
+   OSZI_B_LO ;
 	// if we're not online (enumerated and configured), error
 	if (!usb_configuration) return -1;
 	intr_state = SREG;
@@ -496,6 +513,8 @@ int8_t usb_rawhid_recv(uint8_t *buffer, uint8_t timeout)
 	// release the buffer
 	UEINTX = 0x6B;
 	SREG = intr_state;
+   OSZI_B_HI ;
+   hidstatus = RAWHID_RX_SIZE;
 	return RAWHID_RX_SIZE;
 }
 
@@ -742,18 +761,20 @@ int8_t usb_rawhid_send(const uint8_t *buffer, uint8_t timeout)
 ISR(USB_GEN_vect)
 {
 	uint8_t intbits, t;
-
-        intbits = UDINT;
-        UDINT = 0;
-        if (intbits & (1<<EORSTI)) {
+   
+   intbits = UDINT;
+   UDINT = 0;
+   if (intbits & (1<<EORSTI))
+   {
 		UENUM = 0;
 		UECONX = 1;
 		UECFG0X = EP_TYPE_CONTROL;
 		UECFG1X = EP_SIZE(ENDPOINT0_SIZE) | EP_SINGLE_BUFFER;
 		UEIENX = (1<<RXSTPE);
 		usb_configuration = 0;
-        }
-	if ((intbits & (1<<SOFI)) && usb_configuration) {
+   }
+	if ((intbits & (1<<SOFI)) && usb_configuration)
+   {
 		t = rx_timeout_count;
 		if (t) rx_timeout_count = --t;
 		t = tx_timeout_count;
