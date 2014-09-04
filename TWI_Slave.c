@@ -1360,7 +1360,7 @@ uint16_t count=0;
       }
 
 		
-      
+#pragma mark start_usb
        /**	Begin USB-routinen	***********************/
       
         // Start USB
@@ -1408,6 +1408,12 @@ uint16_t count=0;
                CounterB=0;
                CounterC=0;
                CounterD=0;
+               
+               STEPPERPORT_1 |= (1<<MA_EN); // Pololu OFF
+               STEPPERPORT_1 |= (1<<MB_EN); // Pololu OFF
+               STEPPERPORT_2 |= (1<<MC_EN); // Pololu OFF
+               STEPPERPORT_2 |= (1<<MD_EN); // Pololu OFF
+ 
                lcd_gotoxy(0,1);
                lcd_puts("HALT\0");
                
