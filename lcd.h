@@ -34,7 +34,7 @@
 
 /* AVR port and pins connected to '164 and/or LCD */
 #define LCD_PORT                PORTF
-#define LCD_DDR					DDRF
+#define LCD_DDR                  DDRF
 
 #define LCD_RSDS_PIN            5
 #define LCD_ENABLE_PIN          6

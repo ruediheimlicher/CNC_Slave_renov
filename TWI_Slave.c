@@ -168,8 +168,8 @@ volatile uint8_t liniencounter= 0;
 
 
 
-#define DC                  7    // DC ON: LO
-#define STROM               4    // Stepperstrom ON: HI
+#define DC                  7    // DC ON: HI
+#define STROM               4    // Stepperstrom Generell ON: LO
 
 #define GO_HOME            3     // Bit fuer befehl beginn home auf cncstatus
 #define DC_DIVIDER         1      // teilt die pwm-Frequenz in ISR
@@ -258,7 +258,6 @@ void slaveinit(void)
 	STEPPERPORT_1 |= (1 << MA_RI);	// HI
    
 	STEPPERDDR_1 |= (1 << MA_EN);
-//	STEPPERPORT_1 &= ~(1 << MA_EN);   // LO
 	STEPPERPORT_1 |= (1 << MA_EN);	// HI
 	
 	STEPPERDDR_1 |= (1 << MB_STEP);
@@ -346,8 +345,7 @@ void slaveinit(void)
    CMD_PORT &= ~(1<<DC);                      // LO
    
    CMD_DDR |= (1<<STROM);                    // Stepperstrom-Ausgang, Active HI
-   CMD_PORT &= ~(1<<STROM);                  // LO
-   CMD_PORT |= (1<<STROM);
+   CMD_PORT |= (1<<STROM);                   // HI
 }
 
 
@@ -379,6 +377,7 @@ void timer0 (void)
 
 }
 
+// in startTimer2 verchoben
 /*
 void timer2 (uint8_t wert) 
 { 
@@ -449,12 +448,6 @@ ISR(TIMER2_COMP_vect) // Schaltet Impuls an SERVOPIN0 aus
 }
 */
 
-void DatenLadenAnPosition(uint16_t diePosition)
-{
-   
-   
-
-}
 
 
 //uint8_t  AbschnittLadenVonPosition(uint16_t diePosition)
@@ -462,8 +455,9 @@ void DatenLadenAnPosition(uint16_t diePosition)
 
 uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
 {
-    stopTimer2();
+   stopTimer2();
 	uint8_t returnwert=0;
+#pragma mark Reihenfolge der Daten
 	/*			
 	 Reihenfolge der Daten:
     0    schritteax lb
@@ -1330,7 +1324,7 @@ uint16_t count=0;
 			//lcd_gotoxy(18,1);
 			//lcd_puthex(loopcount1);
 			//timer0();
-		}
+		} // if loopcount
       
       /**	HOT	***********************/
       /*
@@ -1348,7 +1342,7 @@ uint16_t count=0;
          }
          else                    // > DC ON, PIN ist HI
          {
-            CMD_PORT |= (1<<DC);
+            CMD_PORT |= (1<<DC); // DC ON
             //OSZI_A_LO ;
             
          }
@@ -1428,19 +1422,14 @@ uint16_t count=0;
                   CMD_PORT &= ~(1<<DC);
                }
                
-               //sendbuffer[0]=0xE3;
-               //usb_rawhid_send((void*)sendbuffer, 50);
-               //sendbuffer[0]=0x00;
-               //sendbuffer[5]=0x00;
-               //sendbuffer[6]=0x00;
-               
+                
             }break;
                
                
             case 0xE4: // Stepperstrom ON_OFF
             {
                
-               if (buffer[8])
+               if (buffer[8]) // 
                {
                   CMD_PORT |= (1<<STROM); // ON
                   PWM = buffer[20];
@@ -1456,13 +1445,7 @@ uint16_t count=0;
                   CMD_PORT &= ~(1<<DC);
                }
                
-               
-               //sendbuffer[0]=0xE5;
-               //usb_rawhid_send((void*)sendbuffer, 50);
-               //sendbuffer[0]=0x00;
-               //sendbuffer[5]=0x00;
-               //sendbuffer[6]=0x00;
-               
+                 
             }break;
                
             case 0xF1: // reset
@@ -1535,9 +1518,19 @@ uint16_t count=0;
                
                if (abschnittnummer==0)
                {
-                  lcd_clr_line(1);
+                //  lcd_clr_line(1);
                   cli();
-                  
+                  /*
+                  uint8_t i=0,k=0;
+                  for (k=0;k<RINGBUFFERTIEFE;k++)
+                  {
+                     for(i=0;i<USB_DATENBREITE;i++)
+                     {
+                        CNCDaten[k][i]=0;  
+                     }
+                  }
+                   */
+                  //CNCDaten = {};
                   startTimer2();
                   
                   ladeposition=0;
@@ -1552,7 +1545,7 @@ uint16_t count=0;
                   //sendbuffer[8]= versioninth;
                   sendbuffer[5]=0x00;
                   //lcd_gotoxy(0,0);
-                  
+                  sendbuffer[0]=0xD1;
                    
                   if (code == 0xF0) // cncstatus fuer go_home setzen
                   {
@@ -1560,12 +1553,12 @@ uint16_t count=0;
                      sendbuffer[0]=0x45;
                      cncstatus |= (1<<GO_HOME); // Bit fuer go_home setzen
                   }
-                  else
+                  else  if (code == 0xF1)
                   {
                      sendbuffer[0]=0x44;
                      cncstatus &= ~(1<<GO_HOME); // Bit fuer go_home zuruecksetzen
                   }
-              //    usb_rawhid_send((void*)sendbuffer, 50);
+                 usb_rawhid_send((void*)sendbuffer, 50);
                   
                   sei();
                   
@@ -1656,6 +1649,7 @@ uint16_t count=0;
 		} // r>0, neue Daten
       
       /**	End USB-routinen	***********************/
+      
 		/**	Start CNC-routinen	***********************/
       
       if (ringbufferstatus & (1<<STARTBIT)) // Buffer ist geladen, Abschnitt 0 laden
@@ -1914,6 +1908,7 @@ uint16_t count=0;
             
         }
         */
+      #pragma mark Motor B
       // **************************************
       // * Motor B *
       // **************************************
@@ -2110,7 +2105,8 @@ uint16_t count=0;
             STEPPERPORT_2 |= (1<<MC_EN);                     // Motor C OFF
          }
       }
-      
+     
+      #pragma mark Motor D
         // **************************************
       // * Motor D *
       // **************************************
