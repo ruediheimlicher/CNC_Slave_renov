@@ -1448,6 +1448,19 @@ uint16_t count=0;
                  
             }break;
                
+            case 0xE6:  // mousup
+            {
+               CounterA = 0;
+               CounterB = 0;
+               ringbufferstatus = 0;
+               cncstatus=0;
+               motorstatus=0;
+               StepCounterA=0;
+               CounterA=0;
+               AbschnittCounter=0;
+               
+            }break;
+               
             case 0xF1: // reset
             {
                uint8_t i=0, k=0;
@@ -1505,6 +1518,8 @@ uint16_t count=0;
                // Abschnittnummer bestimmen
                uint8_t indexh=buffer[18];
                uint8_t indexl=buffer[19];
+               uint8_t position = buffer[17];
+               
                
                abschnittnummer= indexh<<8;
                abschnittnummer += indexl;
@@ -1514,6 +1529,9 @@ uint16_t count=0;
                
                sendbuffer[8]= versionintl;
                sendbuffer[9]= versioninth;
+               
+               
+              
  //              usb_rawhid_send((void*)sendbuffer, 50); // nicht jedes Paket melden
                
                if (abschnittnummer==0)
@@ -1531,7 +1549,7 @@ uint16_t count=0;
                   }
                    */
                   //CNCDaten = {};
-                  startTimer2();
+                  
                   
                   ladeposition=0;
                   endposition=0xFFFF;
@@ -1553,13 +1571,13 @@ uint16_t count=0;
                      sendbuffer[0]=0x45;
                      cncstatus |= (1<<GO_HOME); // Bit fuer go_home setzen
                   }
-                  else  if (code == 0xF1)
+                  else  if (code == 0xF1) // neu 200606
                   {
                      sendbuffer[0]=0x44;
                      cncstatus &= ~(1<<GO_HOME); // Bit fuer go_home zuruecksetzen
                   }
                  usb_rawhid_send((void*)sendbuffer, 50);
-                  
+                  startTimer2();
                   sei();
                   
                }
@@ -1659,11 +1677,17 @@ uint16_t count=0;
          ladeposition=0;
          AbschnittCounter=0;
          // Ersten Abschnitt laden
+         for(i=0;i<USB_DATENBREITE;i++)
+         {
+  //          CNCDaten[0][i]=0;  
+         }
+
          uint8_t pos=AbschnittLaden_4M(CNCDaten[0]); 
          ladeposition++;
          if (pos==2) // nur ein Abschnitt
          {
             ringbufferstatus |=(1<<ENDBIT);
+            ringbufferstatus |=(1<<LASTBIT);
          }
          
          AbschnittCounter+=1;

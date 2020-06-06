@@ -1,1 +1,1 @@
-//version.c#define VERSION "SLAVE.12.003"
+//version.c#define VERSION "SLAVE.12.200606"
