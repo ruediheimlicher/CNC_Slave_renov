@@ -1025,13 +1025,7 @@ void AnschlagVonMotor(const uint8_t motor)
             StepCounterC=0;
             StepCounterD=0;
             
-            /*
-             CounterA=0xFFFF;
-             CounterB=0xFFFF;
-             CounterC=0xFFFF;
-             CounterD=0xFFFF;
-             */
-            
+             
             ladeposition=0;
             motorstatus=0;
             
@@ -1039,7 +1033,7 @@ void AnschlagVonMotor(const uint8_t motor)
          
          sendbuffer[5]=abschnittnummer;
          sendbuffer[6]=ladeposition;
-         sendbuffer[7]=cncstatus;
+         sendbuffer[8] = cncstatus;
          usb_rawhid_send((void*)sendbuffer, 50);
          sei();
          
@@ -1527,8 +1521,8 @@ uint16_t count=0;
                sendbuffer[5]=abschnittnummer;
                sendbuffer[6]=buffer[16];
                
-               sendbuffer[8]= versionintl;
-               sendbuffer[9]= versioninth;
+    //           sendbuffer[8]= versionintl;
+    //           sendbuffer[9]= versioninth;
                
                
               
@@ -1562,7 +1556,10 @@ uint16_t count=0;
                   //sendbuffer[8]= versionintl;
                   //sendbuffer[8]= versioninth;
                   sendbuffer[5]=0x00;
-                  //lcd_gotoxy(0,0);
+                  
+                  //in teensy3.2: timerintervall
+  //                sendbuffer[8] = (TIMERINTERVALL & 0xFF00)>>8;
+  //                sendbuffer[9] = (TIMERINTERVALL & 0x00FF);
                   sendbuffer[0]=0xD1;
                    
                   if (code == 0xF0) // cncstatus fuer go_home setzen
@@ -1576,7 +1573,7 @@ uint16_t count=0;
                      sendbuffer[0]=0x44;
                      cncstatus &= ~(1<<GO_HOME); // Bit fuer go_home zuruecksetzen
                   }
-                 usb_rawhid_send((void*)sendbuffer, 50);
+        //         usb_rawhid_send((void*)sendbuffer, 50);
                   startTimer2();
                   sei();
                   
@@ -1738,6 +1735,8 @@ uint16_t count=0;
          }
       }
       // End Anschlag B0
+       
+
       */
       
 #pragma mark Anschlag
@@ -1858,6 +1857,8 @@ uint16_t count=0;
                      sendbuffer[0]=0xAD;
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+ //                    sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
+                     sendbuffer[8] = cncstatus;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      ladeposition=0;
                      sei();
@@ -1879,6 +1880,8 @@ uint16_t count=0;
                         sendbuffer[0]=0xD0;
                         sendbuffer[5]=abschnittnummer;
                         sendbuffer[6]=ladeposition;
+                        //sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
+                        sendbuffer[8] = cncstatus;
                         usb_rawhid_send((void*)sendbuffer, 50);
                         sei();
                         
@@ -1888,6 +1891,8 @@ uint16_t count=0;
                         // neuen Abschnitt abrufen
                         sendbuffer[5]=abschnittnummer;
                         sendbuffer[6]=ladeposition;
+                        //sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
+                        sendbuffer[8] = cncstatus;
                         sendbuffer[0]=0xA1;
                         usb_rawhid_send((void*)sendbuffer, 50);
                      }
@@ -1983,6 +1988,8 @@ uint16_t count=0;
                      sendbuffer[0]=0xD0;
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                    // sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
+                     sendbuffer[8] = cncstatus;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      sei();
 
@@ -1992,6 +1999,8 @@ uint16_t count=0;
                      // neuen Abschnitt abruffen
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                    // sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
+                     sendbuffer[8] = cncstatus;
                      sendbuffer[0]=0xA1;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      sei();
@@ -2064,6 +2073,7 @@ uint16_t count=0;
                sendbuffer[0]=0xAD;
                sendbuffer[5]=abschnittnummer;
                sendbuffer[6]=ladeposition;
+               sendbuffer[8] = cncstatus;
                usb_rawhid_send((void*)sendbuffer, 50);
                ladeposition=0;
                sei();
@@ -2089,6 +2099,7 @@ uint16_t count=0;
                      sendbuffer[0]=0xD0;
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                     sendbuffer[8] = cncstatus;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      sei();
 
@@ -2098,6 +2109,7 @@ uint16_t count=0;
                      // neuen Abschnitt abrufen
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                     sendbuffer[8] = cncstatus;
                      sendbuffer[0]=0xA2;
                      usb_rawhid_send((void*)sendbuffer, 50);  
                      
@@ -2179,6 +2191,7 @@ uint16_t count=0;
                      sendbuffer[0]=0xD0;
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                     sendbuffer[8] = cncstatus;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      sei();
 
@@ -2188,6 +2201,7 @@ uint16_t count=0;
                      // neuen Abschnitt abruffen
                      sendbuffer[5]=abschnittnummer;
                      sendbuffer[6]=ladeposition;
+                     sendbuffer[8] = cncstatus;
                      sendbuffer[0]=0xA3;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      
