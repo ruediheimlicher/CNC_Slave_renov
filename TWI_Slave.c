@@ -325,10 +325,10 @@ void slaveinit(void)
    
    // Anschlaege
    
-   STEPPERPORT_1 &= ~(1<<END_A0_PIN);			//	Eingang fŸr Endanschlag A0
+   STEPPERDDR_1 &= ~(1<<END_A0_PIN);			//	Eingang fŸr Endanschlag A0
 	STEPPERPORT_1 |= (1<<END_A0_PIN);			// Pull-up
    
-	STEPPERPORT_1 &= ~(1<<END_B0_PIN);			//	Eingang fŸr Endanschlag B0
+	STEPPERDDR_1 &= ~(1<<END_B0_PIN);			//	Eingang fŸr Endanschlag B0
 	STEPPERPORT_1 |= (1<<END_B0_PIN);			// Pull-up
    
    
@@ -987,7 +987,7 @@ void AnschlagVonMotor(const uint8_t motor)
                //STEPPERPORT_2 |= (1<<(MA_EN + motor + 2)); // Paralleler Motor 2,3 OFF
                StepCounterA=0;
                StepCounterB=0;
-               //               CounterA=0xFFFF;
+               //              CounterA=0xFFFF;
                //              CounterB=0xFFFF;
                
             }
