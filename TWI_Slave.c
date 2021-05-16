@@ -960,11 +960,9 @@ void AnschlagVonMotor(const uint8_t motor)
          
          anschlagstatus |= (1<< (END_A0 + motor));      // Bit fuer Anschlag A0+motor setzen
          //lcd_putc('A');
-         
-         
+                  
          if (cncstatus & (1<<GO_HOME)) // nur eigene Seite abstellen
          {
-            
             // Paralleler Schlitten gleichzeitig am Anschlag?
             switch (motor) // Stepperport 1
             {
@@ -972,8 +970,7 @@ void AnschlagVonMotor(const uint8_t motor)
                {
                   
                }
-                  
-                  
+                                    
             }//switch motor
             
             //lcd_putc('B');
@@ -1948,7 +1945,7 @@ uint16_t count=0;
          //lcd_putc('B');
          
 			STEPPERPORT_1 &= ~(1<<MB_STEP);					// Impuls an Motor B LO ON
-			CounterB= DelayB;
+			CounterB = DelayB;
 			StepCounterB--;
          
 			if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
@@ -1983,7 +1980,6 @@ uint16_t count=0;
                   if (aktuellelage==2) // war letzter Abschnitt
                   {
                       endposition=abschnittnummer; // letzter Abschnitt
-                     
                      // Neu: letzten Abschnitt melden
                      sendbuffer[0]=0xD0;
                      sendbuffer[5]=abschnittnummer;
@@ -1992,7 +1988,6 @@ uint16_t count=0;
                      sendbuffer[8] = cncstatus;
                      usb_rawhid_send((void*)sendbuffer, 50);
                      sei();
-
                   }  
                   else
                   {
@@ -2007,18 +2002,14 @@ uint16_t count=0;
                   }
                   
                   ladeposition++;
-                  
                }
                if (aktuellelage==2)
                {
                   //ringbufferstatus |= (1<<ENDBIT);
                }
                AbschnittCounter++;
-               
             }
          }
-			
-			
 			sei();
 		}
 		else// if (CounterB)
@@ -2050,8 +2041,7 @@ uint16_t count=0;
          // Impuls starten
          STEPPERPORT_2 &= ~(1<<MC_STEP);   // Impuls an Motor C LO -> ON
          CounterC=DelayC;                     // CounterA zuruecksetzen fuer neuen Impuls
-         
-         
+          
          StepCounterC--;
          
          // Wenn StepCounterC abgelaufen und relevant: next Datenpaket abrufen
