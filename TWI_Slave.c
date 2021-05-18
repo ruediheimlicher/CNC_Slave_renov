@@ -658,7 +658,28 @@ uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
    
    startTimer2();
    
-  
+   /*
+   lcd_gotoxy(0,0);
+   lcd_putc('A');
+   lcd_putint12(StepCounterA);
+   lcd_putc(' ');
+   lcd_putint12(CounterA);
+   lcd_gotoxy(0,1);
+   lcd_putc('B');
+   lcd_putint12(StepCounterB);
+   lcd_putc(' ');
+   lcd_putint12(CounterA);
+   lcd_gotoxy(0,2);
+   lcd_putc('C');
+   lcd_putint12(StepCounterC);
+   lcd_putc(' ');
+   lcd_putint12(CounterC);
+   lcd_gotoxy(0,3);
+   lcd_putc('D');
+   lcd_putint12(StepCounterD);
+   lcd_putc(' ');
+   lcd_putint12(CounterD);
+*/
    return returnwert;
    
    // Nicht mehr verwendet, wird in Stepper berechnet
@@ -940,17 +961,19 @@ uint8_t  AbschnittLaden(const uint8_t* AbschnittDaten)
    STEPPERPORT_2 &= ~(1<<MC_EN); // Pololu ON
    STEPPERPORT_2 &= ~(1<<MD_EN); // Pololu ON
    
-   return returnwert;
+     return returnwert;
 }
+
 
 
 void AnschlagVonMotor(const uint8_t motor)
 {
-  // return;
-   //lcd_gotoxy(0,1);
-   //lcd_putc('A');
-   //lcd_gotoxy(2+2*motor,1);
-   //lcd_puthex(motor);
+   //return;
+   lcd_gotoxy(0,1);
+   lcd_putc('M');
+   lcd_gotoxy(2+2*motor,1);
+   lcd_puthex(motor);
+   lcd_puthex(richtung);
    if (richtung & (1<<(RICHTUNG_A + motor))) // Richtung ist auf Anschlag A0 zu         
    {
       
@@ -959,10 +982,16 @@ void AnschlagVonMotor(const uint8_t motor)
          cli();
          
          anschlagstatus |= (1<< (END_A0 + motor));      // Bit fuer Anschlag A0+motor setzen
-         //lcd_putc('A');
-                  
+   //      lcd_gotoxy(0,2);
+   //      lcd_putc('A');
+   //      lcd_putint16(StepCounterA);
+   //      lcd_putc(' ');
+    //     lcd_putint(DelayA);
+         
          if (cncstatus & (1<<GO_HOME)) // nur eigene Seite abstellen
          {
+            lcd_putc(' ');
+            lcd_puts("home");
             // Paralleler Schlitten gleichzeitig am Anschlag?
             switch (motor) // Stepperport 1
             {
@@ -972,36 +1001,56 @@ void AnschlagVonMotor(const uint8_t motor)
                }
                                     
             }//switch motor
+            lcd_gotoxy(10,3);
+            lcd_putc('L');
+            lcd_putint2(ladeposition);
             
-            //lcd_putc('B');
-            sendbuffer[0]=0xB5 + motor;
+   //        sendbuffer[0]=0xB5 + motor; // HOME Ankunft melden
             
             cncstatus |= (1<<motor);
             
+            lcd_putc('C');
+            lcd_putint(cncstatus);
+           
             if (motor<2) // Stepperport 1
             {
-               STEPPERPORT_1 |= (1<<(MA_EN + motor));     // Motor 0,1 OFF
+               lcd_gotoxy(0,2);
+               //lcd_putc('A');
+               //lcd_putint2(motor);
+               lcd_puts("MA stop");
+               STEPPERPORT_1 |= (1<<(MA_EN + motor));     // Motor 0,1 OFF // andere Richtung kommt anschliessend von master
                //STEPPERPORT_2 |= (1<<(MA_EN + motor + 2)); // Paralleler Motor 2,3 OFF
                StepCounterA=0;
-               StepCounterB=0;
-               //              CounterA=0xFFFF;
-               //              CounterB=0xFFFF;
+            //   StepCounterB=0;
+                //             CounterA=0xFFFF;
+                //             CounterB=0xFFFF;
                
             }
             else // Stepperport 2
             {
+               lcd_gotoxy(10,2);
+               lcd_puts("MC stop");
+
                STEPPERPORT_2 |= (1<<(MA_EN + motor));     // Motor 2,3 OFF
                //STEPPERPORT_1 |= (1<<(MA_EN + motor - 2)); // Paralleler Motor 0,1 OFF
                StepCounterC=0;
-               StepCounterD=0;
+               
+              // StepCounterD=0;
                //               CounterC=0xFFFF;
                //               CounterD=0xFFFF;
+               
             }
-            //cncstatus &= ~(1<<GO_HOME);
-            
-         }
+    //        cncstatus &= ~(1<<GO_HOME);
+            //ladeposition=0;
+    //        AbschnittCounter++;
+            sendbuffer[0]=0xEA;
+            lcd_puthex(STEPPERPIN_1);
+            lcd_puthex(STEPPERPIN_2);
+         } // end HOME
          else           // beide Seiten abstellen
          {    
+            lcd_gotoxy(15,0);
+            lcd_puts("both");
             cncstatus=0;
             sendbuffer[0]=0xA5 + motor;
             
@@ -1022,24 +1071,24 @@ void AnschlagVonMotor(const uint8_t motor)
             StepCounterC=0;
             StepCounterD=0;
             
-             
+            
             ladeposition=0;
             motorstatus=0;
             
+            
+            
+            sendbuffer[5]=abschnittnummer;
+            sendbuffer[6]=ladeposition;
+            sendbuffer[8] = cncstatus;
+            usb_rawhid_send((void*)sendbuffer, 50);
+            sei();
+            
+            
+            //ladeposition=0;
+            // motorstatus=0;
+            
+            richtung &= ~(1<<(RICHTUNG_A + motor)); // Richtung umschalten
          }
-         
-         sendbuffer[5]=abschnittnummer;
-         sendbuffer[6]=ladeposition;
-         sendbuffer[8] = cncstatus;
-         usb_rawhid_send((void*)sendbuffer, 50);
-         sei();
-         
-         
-         //ladeposition=0;
-         // motorstatus=0;
-         
-         richtung &= ~(1<<(RICHTUNG_A + motor)); // Richtung umschalten
-         
          
          sei();
       } // NOT END_A0
@@ -1058,6 +1107,93 @@ void AnschlagVonMotor(const uint8_t motor)
       }
       
    }
+   
+}
+
+void gohome(void)
+{
+   /*         
+    Reihenfolge der Daten:
+    0    schritteax lb
+    1    schritteax hb
+    2    schritteay lb
+    3    schritteay hb
+    
+    4    delayax lb
+    5    delayax hb
+    6    delayay lb
+    7    delayay hb
+    
+    8    schrittebx lb
+    9    schrittebx hb
+    10    schritteby lb
+    11    schritteby hb
+    
+    12    delaybx lb
+    13    delaybx hb
+    14    delayby lb
+    15    delayby hb
+    
+    
+    16   (8)    code
+    17   (9)    position // Beschreibung der Lage im Schnittpolygon:first, last, ...
+    18   (10)   indexh     // Nummer des Abschnitts
+    19   (11)   indexl   
+    
+    20     pwm
+    
+    21   motorstatus // relevanter Motor fuer Abschnitt
+    */         
+   
+   richtung |= (1<<RICHTUNG_A ); // horizontaler Anschlag A
+   richtung |= (1<<RICHTUNG_C ); // horizontaler Anschlag C
+   cncstatus |= (1<<GO_HOME);
+   
+   StepCounterA=0;
+   StepCounterB=0;
+   StepCounterC=0;
+   StepCounterD=0;
+   
+   CounterA=0xFFFF;
+   CounterB=0xFFFF;
+   CounterC=0xFFFF;
+   CounterD=0xFFFF;
+   uint8_t i=0, k=0;
+   for (k=0;k<RINGBUFFERTIEFE;k++)
+   {
+      for(i=0;i<USB_DATENBREITE;i++)
+      {
+         CNCDaten[k][i]=0;  
+      }
+   }
+   CNCDaten[0][0] = 92;// schritteax lb
+   CNCDaten[0][1] = 121;// schritteax hb
+   CNCDaten[0][4] = 14;// delayax lb
+   CNCDaten[0][8] = 92;// schrittebx lb
+   CNCDaten[0][9] = 102;// schrittebx hb
+   CNCDaten[0][12] = 14;// delaybx lb
+   CNCDaten[0][16] = 240; // code F0
+   CNCDaten[0][17] = 1; // position Beschreibung der Lage im Schnittpolygon:first, last, ...
+   CNCDaten[1][19] = 0; // indexl
+   CNCDaten[0][21] = 1; // motorstatus // relevanter Motor fuer Abschnitt
+   
+   CNCDaten[1][2] = 80;// schrittebx lb
+   CNCDaten[1][3] = 165;// schrittebx hb
+   CNCDaten[1][6] = 14;// delayay lb
+   CNCDaten[1][10] = 80;// schritteby lb
+   CNCDaten[1][11] = 165;// schritteby hb
+   CNCDaten[1][14] = 14; // delayby lb
+   CNCDaten[1][16] = 240; // code F0
+   CNCDaten[1][17] = 2;// position Beschreibung der Lage im Schnittpolygon:first, last, ...
+   CNCDaten[1][19] = 1; // indexl
+   CNCDaten[1][21] = 1;
+   
+   uint8_t pos=AbschnittLaden_4M(CNCDaten[0]); 
+   
+   richtung |= (1<<RICHTUNG_A ); // horizontaler Anschlag A
+   richtung |= (1<<RICHTUNG_C ); // horizontaler Anschlag C
+   cncstatus |= (1<<GO_HOME);
+
    
 }
 
@@ -1220,70 +1356,70 @@ int main (void)
 
 uint16_t count=0;
     
-	// set for 16 MHz clock
-	CPU_PRESCALE(0);
+   // set for 16 MHz clock
+   CPU_PRESCALE(0);
     
-	// Initialize the USB, and then wait for the host to set configuration.
-	// If the Teensy is powered without a PC connected to the USB port,
-	// this will wait forever.
-	usb_init();
-	while (!usb_configured()) /* wait */ ;
+   // Initialize the USB, and then wait for the host to set configuration.
+   // If the Teensy is powered without a PC connected to the USB port,
+   // this will wait forever.
+   usb_init();
+   while (!usb_configured()) /* wait */ ;
     
-	// Wait an extra second for the PC's operating system to load drivers
-	// and do whatever it does to actually be ready for input
-	_delay_ms(1000);
+   // Wait an extra second for the PC's operating system to load drivers
+   // and do whatever it does to actually be ready for input
+   _delay_ms(1000);
 
-	//in Start-loop in while
-	//init_twi_slave (SLAVE_ADRESSE);
-	sei();
-	
-	
-	slaveinit();
-		
-	/* initialize the LCD */
-	lcd_initialize(LCD_FUNCTION_8x2, LCD_CMD_ENTRY_INC, LCD_CMD_ON);
+   //in Start-loop in while
+   //init_twi_slave (SLAVE_ADRESSE);
+   sei();
+   
+   
+   slaveinit();
+      
+   /* initialize the LCD */
+   lcd_initialize(LCD_FUNCTION_8x2, LCD_CMD_ENTRY_INC, LCD_CMD_ON);
 
-	lcd_puts("Guten Tag\0");
-	delay_ms(100);
-	lcd_cls();
-	//lcd_puts("READY\0");
-	lcd_puts("V: \0");
-	lcd_puts(VERSION);
+   lcd_puts("Guten Tag\0");
+   delay_ms(100);
+   lcd_cls();
+   //lcd_puts("READY\0");
+   lcd_puts("V: \0");
+   lcd_puts(VERSION);
    lcd_clr_line(1);
 
-	uint8_t Tastenwert=0;
-	uint8_t TastaturCount=0;
-	
-	uint16_t TastenStatus=0;
-	uint16_t Tastencount=0;
-	uint16_t Tastenprellen=0x01F;
-	//timer0();
-	
-	//initADC(TASTATURPIN);
-	//wdt_enable(WDTO_2S);
-	
-	uint16_t loopcount0=0;
-	uint8_t loopcount1=0;
-
-	
-	
-	
-	/*
-	Bit 0: 1 wenn wdt ausgelšst wurde
-	 
-	  */ 
-	uint8_t i=0;
+   uint8_t Tastenwert=0;
+   uint8_t TastaturCount=0;
    
-	//timer2
-	TCNT2   = 0; 
-//	TCCR2A |= (1 << WGM21);    // Configure timer 2 for CTC mode 
-	TCCR2B |= (1 << CS20);     // Start timer at Fcpu/8 
-//	TIMSK2 |= (1 << OCIE2A);   // Enable CTC interrupt 
-	TIMSK2 |= (1 << TOIE2);    // Enable OV interrupt 
-	//OCR2A   = 5;             // Set CTC compare value with a prescaler of 64 
+   uint16_t TastenStatus=0;
+   uint16_t Tastencount=0;
+   uint16_t Tastenprellen=0x01F;
+   //timer0();
+   
+   //initADC(TASTATURPIN);
+   //wdt_enable(WDTO_2S);
+   
+   uint16_t loopcount0=0;
+   uint8_t loopcount1=0;
+
+   
+   
+   
+   /*
+   Bit 0: 1 wenn wdt ausgelšst wurde
+    
+     */ 
+   uint8_t i=0;
+   
+   //timer2
+   TCNT2   = 0; 
+//   TCCR2A |= (1 << WGM21);    // Configure timer 2 for CTC mode 
+   TCCR2B |= (1 << CS20);     // Start timer at Fcpu/8 
+//   TIMSK2 |= (1 << OCIE2A);   // Enable CTC interrupt 
+   TIMSK2 |= (1 << TOIE2);    // Enable OV interrupt 
+   //OCR2A   = 5;             // Set CTC compare value with a prescaler of 64 
     TCCR2A = 0x00;
 
-	  sei();
+     sei();
    
    PWM = 0;
    
@@ -1296,28 +1432,28 @@ uint16_t count=0;
    volatile uint8_t versioninth = (versionint & 0xFF00)>>8;
    
    
-#pragma mark while	  
-	while (1)
-	{
+#pragma mark while     
+   while (1)
+   {
       
       //OSZI_B_LO;
-		//Blinkanzeige
-		loopcount0+=1;
-		if (loopcount0==0xAFFF)
-		{
-			loopcount0=0;
-			loopcount1+=1;
-			LOOPLEDPORT ^=(1<<LOOPLED);
+      //Blinkanzeige
+      loopcount0+=1;
+      if (loopcount0==0xAFFF)
+      {
+         loopcount0=0;
+         loopcount1+=1;
+         LOOPLEDPORT ^=(1<<LOOPLED);
          PORTD ^= (1<<PORTD6);
-			//
-			//STEPPERPORT_1 ^= (1 << MA_STEP);
-			//PORTD ^= (1<<0);
-			//lcd_gotoxy(18,1);
-			//lcd_puthex(loopcount1);
-			//timer0();
-		} // if loopcount
+         //
+         //STEPPERPORT_1 ^= (1 << MA_STEP);
+         //PORTD ^= (1<<0);
+         //lcd_gotoxy(18,1);
+         //lcd_puthex(loopcount1);
+         //timer0();
+      } // if loopcount
       
-      /**	HOT	***********************/
+      /**   HOT   ***********************/
       /*
        pwmposition wird in der ISR incrementiert. Wenn pwmposition > ist als der eingestellte Wert PWM, wird der Impuls wieder abgeschaltet. Nach dem Overflow wird wieder eingeschaltet
        */
@@ -1344,14 +1480,14 @@ uint16_t count=0;
          CMD_PORT &= ~(1<<DC); // Draht ausschalten
       }
 
-		
+      
 #pragma mark start_usb
-       /**	Begin USB-routinen	***********************/
+       /**   Begin USB-routinen   ***********************/
       
         // Start USB
       //lcd_putc('u');
       r = usb_rawhid_recv((void*)buffer, 0);
-		if (r > 0) 
+      if (r > 0) 
       {
          //OSZI_B_HI;
          cli(); 
@@ -1658,11 +1794,11 @@ uint16_t count=0;
          code=0;
          sei();
          
-		} // r>0, neue Daten
+      } // r>0, neue Daten
       
-      /**	End USB-routinen	***********************/
+      /**   End USB-routinen   ***********************/
       
-		/**	Start CNC-routinen	***********************/
+      /**   Start CNC-routinen   ***********************/
       
       if (ringbufferstatus & (1<<STARTBIT)) // Buffer ist geladen, Abschnitt 0 laden
       {
@@ -1813,7 +1949,7 @@ uint16_t count=0;
       // **************************************
    
       // Es hat noch Steps, CounterA ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-            if (StepCounterA &&(CounterA == 0) &&(!(anschlagstatus & (1<< END_A0))))//||(cncstatus & (1<< END_B0)))))//	
+            if (StepCounterA &&(CounterA == 0) &&(!(anschlagstatus & (1<< END_A0))))//||(cncstatus & (1<< END_B0)))))//   
             {
                 cli();
                // Impuls starten
@@ -1913,9 +2049,9 @@ uint16_t count=0;
             }
             else
             {
-                STEPPERPORT_1 |= (1<<MA_STEP);					// Impuls an Motor A HI -> OFF
+                STEPPERPORT_1 |= (1<<MA_STEP);               // Impuls an Motor A HI -> OFF
                 
-                if (StepCounterA ==0)							// Keine Steps mehr fuer Motor A
+                if (StepCounterA ==0)                     // Keine Steps mehr fuer Motor A
                 {
                     STEPPERPORT_1 |= (1<<MA_EN);                     // Motor A OFF
                 }
@@ -1939,19 +2075,19 @@ uint16_t count=0;
       // * Motor B *
       // **************************************
       
-		if (StepCounterB && (CounterB == 0)&&(!(anschlagstatus & (1<< END_B0))))
-		{
+      if (StepCounterB && (CounterB == 0)&&(!(anschlagstatus & (1<< END_B0))))
+      {
          cli();
          //lcd_putc('B');
          
-			STEPPERPORT_1 &= ~(1<<MB_STEP);					// Impuls an Motor B LO ON
-			CounterB = DelayB;
-			StepCounterB--;
+         STEPPERPORT_1 &= ~(1<<MB_STEP);               // Impuls an Motor B LO ON
+         CounterB = DelayB;
+         StepCounterB--;
          
-			if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
-			{
-//				STEPPERPORT_1 |= (1<<MB_EN);					// Motor B OFF
-				
+         if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
+         {
+//            STEPPERPORT_1 |= (1<<MB_EN);               // Motor B OFF
+            
             //StepCounterA=0;
             //lcd_putc('-');
             // Begin Ringbuffer-Stuff
@@ -2010,21 +2146,21 @@ uint16_t count=0;
                AbschnittCounter++;
             }
          }
-			sei();
-		}
-		else// if (CounterB)
-		{
-			STEPPERPORT_1 |= (1<<MB_STEP);
-			if (StepCounterB ==0)							// Keine Steps mehr fuer Motor B
-			{
-				STEPPERPORT_1 |= (1<<MB_EN);					// Motor B OFF
+         sei();
+      }
+      else// if (CounterB)
+      {
+         STEPPERPORT_1 |= (1<<MB_STEP);
+         if (StepCounterB ==0)                     // Keine Steps mehr fuer Motor B
+         {
+            STEPPERPORT_1 |= (1<<MB_EN);               // Motor B OFF
                 
-			}
-			
-			
-			
-		}
-		sei(); 
+         }
+         
+         
+         
+      }
+      sei(); 
       
       // End Motor B
       
@@ -2035,7 +2171,7 @@ uint16_t count=0;
       // **************************************
       
       // Es hat noch Steps, CounterC ist abgezaehlt (DelayA bestimmt Impulsabstand fuer Steps)
-      if (StepCounterC &&(CounterC == 0) &&(!(anschlagstatus & (1<< END_C0))))//||(cncstatus & (1<< END_D0)))))//	
+      if (StepCounterC &&(CounterC == 0) &&(!(anschlagstatus & (1<< END_C0))))//||(cncstatus & (1<< END_D0)))))//   
       {
          cli();
          // Impuls starten
@@ -2124,9 +2260,9 @@ uint16_t count=0;
       }
       else
       {
-         STEPPERPORT_2 |= (1<<MC_STEP);					// Impuls an Motor C HI -> OFF
+         STEPPERPORT_2 |= (1<<MC_STEP);               // Impuls an Motor C HI -> OFF
          
-         if (StepCounterC ==0)							// Keine Steps mehr fuer Motor C
+         if (StepCounterC ==0)                     // Keine Steps mehr fuer Motor C
          {
             STEPPERPORT_2 |= (1<<MC_EN);                     // Motor C OFF
          }
@@ -2137,18 +2273,18 @@ uint16_t count=0;
       // * Motor D *
       // **************************************
       
-		if (StepCounterD && (CounterD == 0)&&(!(anschlagstatus & (1<< END_D0))))
-		{
+      if (StepCounterD && (CounterD == 0)&&(!(anschlagstatus & (1<< END_D0))))
+      {
          cli();
          
-			STEPPERPORT_2 &= ~(1<<MD_STEP);					// Impuls an Motor D LO: ON
-			CounterD= DelayD;
-			StepCounterD--;
+         STEPPERPORT_2 &= ~(1<<MD_STEP);               // Impuls an Motor D LO: ON
+         CounterD= DelayD;
+         StepCounterD--;
          
-			if (StepCounterD ==0 && (motorstatus & (1<< COUNT_D))) // Motor D ist relevant fuer Stepcount 
-			{
-//				STEPPERPORT_2 |= (1<<MD_EN);					// Motor D OFF
-				
+         if (StepCounterD ==0 && (motorstatus & (1<< COUNT_D))) // Motor D ist relevant fuer Stepcount 
+         {
+//            STEPPERPORT_2 |= (1<<MD_EN);               // Motor D OFF
+            
             //StepCounterC=0;
             // Begin Ringbuffer-Stuff
             if (abschnittnummer==endposition)
@@ -2208,68 +2344,68 @@ uint16_t count=0;
                
             }
          }
-			
-			
-			sei();
-		}
-		else// if (CounterB)
-		{
-			STEPPERPORT_2 |= (1<<MD_STEP);
-			if (StepCounterD ==0)							// Keine Steps mehr fuer Motor D
-			{
-				STEPPERPORT_2 |= (1<<MD_EN);					// Motor D OFF
+         
+         
+         sei();
+      }
+      else// if (CounterB)
+      {
+         STEPPERPORT_2 |= (1<<MD_STEP);
+         if (StepCounterD ==0)                     // Keine Steps mehr fuer Motor D
+         {
+            STEPPERPORT_2 |= (1<<MD_EN);               // Motor D OFF
             
-			}
-			
-			
-			
-		}
-		sei(); 
+         }
+         
+         
+         
+      }
+      sei(); 
       // End Motor D
-		
+      
    
-		/**	Ende CNC-routinen	***********************/
-		
-		
-		/* **** rx_buffer abfragen **************** */
-		//rxdata=0;
-		
-#pragma mark Tasten		
-		//	Daten von USB vorhanden
-		 // rxdata
-		
-		//lcd_gotoxy(16,0);
+      /**   Ende CNC-routinen   ***********************/
+      
+      
+      /* **** rx_buffer abfragen **************** */
+      //rxdata=0;
+      
+#pragma mark Tasten      
+      //   Daten von USB vorhanden
+       // rxdata
+      
+      //lcd_gotoxy(16,0);
         //lcd_putint(StepCounterA & 0x00FF);
-		
-		if (!(TASTENPIN & (1<<TASTE0))) // Taste 0
-		{
-			//lcd_gotoxy(8,1);
-			//lcd_puts("T0 Down\0");
-			
-			if (!(TastenStatus & (1<<TASTE0))) //Taste 0 war noch nicht gedrueckt
-			{
-				//RingD2(5);
-				TastenStatus |= (1<<TASTE0);
-				
-				Tastencount=0;
-				//lcd_gotoxy(0,1);
-				//lcd_puts("P0 \0");
-				//lcd_putint(TastenStatus);
-				//delay_ms(800);
-			}
-			else
-			{
-				
-				
-				Tastencount +=1;
-				//lcd_gotoxy(7,1);
-				//lcd_puts("TC \0");
-				//lcd_putint(Tastencount);
-				
-				if (Tastencount >= Tastenprellen)
-				{
+      
+      if (!(TASTENPIN & (1<<TASTE0))) // Taste 0
+      {
+         //lcd_gotoxy(8,1);
+         //lcd_puts("T0 Down\0");
+         
+         if (!(TastenStatus & (1<<TASTE0))) //Taste 0 war noch nicht gedrueckt
+         {
+            //RingD2(5);
+            TastenStatus |= (1<<TASTE0);
+            
+            Tastencount=0;
+            //lcd_gotoxy(0,1);
+            //lcd_puts("P0 \0");
+            //lcd_putint(TastenStatus);
+            //delay_ms(800);
+         }
+         else
+         {
+            
+            
+            Tastencount +=1;
+            //lcd_gotoxy(7,1);
+            //lcd_puts("TC \0");
+            //lcd_putint(Tastencount);
+            
+            if (Tastencount >= Tastenprellen)
+            {
                
-					Tastencount=0;
+               Tastencount=0;
                if (TastenStatus & (1<<TASTE0))
                {
                   //sendbuffer[0]=loopcount1;
@@ -2280,7 +2416,7 @@ uint16_t count=0;
 
                   //usb_rawhid_send((void*)sendbuffer, 50);
                }
-					TastenStatus &= ~(1<<TASTE0);
+               TastenStatus &= ~(1<<TASTE0);
                //lcd_gotoxy(3,1);
                //lcd_puts("ON \0");
                //delay_ms(400);
@@ -2289,56 +2425,56 @@ uint16_t count=0;
                //lcd_putint(TastenStatus);
                
                
-				}
-			}//else
-			
-		}	// Taste 0
-		
+            }
+         }//else
          
-		
-		if (!(TASTENPIN & (1<<TASTE1))) // Taste 1
-		{
-			//lcd_gotoxy(12,1);
-			//lcd_puts("T1 Down\0");
-			
-			if (! (TastenStatus & (1<<TASTE1))) //Taste 1 war nicht nicht gedrueckt
-			{
-				TastenStatus |= (1<<TASTE1);
-				Tastencount=0;
-				//lcd_gotoxy(3,1);
-				//lcd_puts("P1 \0");
-				//lcd_putint(Servoimpulsdauer);
-				//delay_ms(800);
-				
-			}
-			else
-			{
-				//lcd_gotoxy(3,1);
-				//lcd_puts("       \0");
-				
-				Tastencount +=1;
-				if (Tastencount >= Tastenprellen)
-				{
-					
-					
-					Tastencount=0;
-					TastenStatus &= ~(1<<TASTE1);
-					
-				}
-			}//	else
-			
-		} // Taste 1
-		
-		/* ******************** */
-		//		initADC(TASTATURPIN);
-		//		Tastenwert=(uint8_t)(readKanal(TASTATURPIN)>>2);
-		
-		Tastenwert=0;
-		
-		//lcd_gotoxy(3,1);
-		//lcd_putint(Tastenwert);
+      }   // Taste 0
+      
+         
+      
+      if (!(TASTENPIN & (1<<TASTE1))) // Taste 1
+      {
+         //lcd_gotoxy(12,1);
+         //lcd_puts("T1 Down\0");
+         
+         if (! (TastenStatus & (1<<TASTE1))) //Taste 1 war nicht nicht gedrueckt
+         {
+            TastenStatus |= (1<<TASTE1);
+            Tastencount=0;
+            //lcd_gotoxy(3,1);
+            //lcd_puts("P1 \0");
+            //lcd_putint(Servoimpulsdauer);
+            //delay_ms(800);
+            
+         }
+         else
+         {
+            //lcd_gotoxy(3,1);
+            //lcd_puts("       \0");
+            
+            Tastencount +=1;
+            if (Tastencount >= Tastenprellen)
+            {
+               
+               
+               Tastencount=0;
+               TastenStatus &= ~(1<<TASTE1);
+               
+            }
+         }//   else
+         
+      } // Taste 1
+      
+      /* ******************** */
+      //      initADC(TASTATURPIN);
+      //      Tastenwert=(uint8_t)(readKanal(TASTATURPIN)>>2);
+      
+      Tastenwert=0;
+      
+      //lcd_gotoxy(3,1);
+      //lcd_putint(Tastenwert);
    
-		//OSZI_B_HI;
+      //OSZI_B_HI;
       if (usbstatus & (1<< USB_SEND))
       {
          //lcd_gotoxy(10,1);
@@ -2352,7 +2488,7 @@ uint16_t count=0;
          
       }
 
-	}//while
+   }//while
    //free (sendbuffer);
 
 // return 0;
