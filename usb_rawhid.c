@@ -61,14 +61,14 @@
 #define OSZI_PULS_A        0
 #define OSZI_PULS_B        1
 
-#define OSZI_A_LO OSZIPORT &= ~(1<<OSZI_PULS_A)
-#define OSZI_A_HI OSZIPORT |= (1<<OSZI_PULS_A)
-#define OSZI_A_TOGG OSZIPORT ^= (1<<OSZI_PULS_A)
+#define OSZIALO OSZIPORT &= ~(1<<OSZI_PULS_A)
+#define OSZIAHI OSZIPORT |= (1<<OSZI_PULS_A)
+#define OSZIATOGG OSZIPORT ^= (1<<OSZI_PULS_A)
 
 
-#define OSZI_B_LO OSZIPORT &= ~(1<<OSZI_PULS_B)
-#define OSZI_B_HI OSZIPORT |= (1<<OSZI_PULS_B)
-#define OSZI_B_TOGG OSZIPORT ^= (1<<OSZI_PULS_B)
+#define OSZIBLO OSZIPORT &= ~(1<<OSZI_PULS_B)
+#define OSZIBHI OSZIPORT |= (1<<OSZI_PULS_B)
+#define OSZIBTOG OSZIPORT ^= (1<<OSZI_PULS_B)
 
 
 /**************************************************************************
@@ -299,7 +299,7 @@ uint8_t usb_configured(void)
 int8_t usb_rawhid_recv(uint8_t *buffer, uint8_t timeout)
 {
 	uint8_t intr_state;
-   OSZI_B_LO ;
+   OSZIBLO ;
 	// if we're not online (enumerated and configured), error
 	if (!usb_configuration) return -1;
 	intr_state = SREG;
@@ -513,7 +513,7 @@ int8_t usb_rawhid_recv(uint8_t *buffer, uint8_t timeout)
 	// release the buffer
 	UEINTX = 0x6B;
 	SREG = intr_state;
-   OSZI_B_HI ;
+   OSZIBHI ;
    hidstatus = RAWHID_RX_SIZE;
 	return RAWHID_RX_SIZE;
 }
