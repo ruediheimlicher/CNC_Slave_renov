@@ -419,10 +419,14 @@ ISR (TIMER2_OVF_vect)
 	{
        
 
-		CounterA-=1;
-		CounterB-=1;
-      CounterC-=1;
-      CounterD-=1;
+//		CounterA-=1;
+//		CounterB-=1;
+ //     CounterC-=1;
+//      CounterD-=1;
+      if (CounterA)  CounterA-=1;
+      if (CounterB)    CounterB-=1;
+      if (CounterC)  CounterC-=1;
+      if (CounterD)  CounterD-=1;
       
       if (PWM)
       {

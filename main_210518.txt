@@ -79,7 +79,7 @@ uint16_t count=0;
    volatile uint8_t versioninth = (versionint & 0xFF00)>>8;
    
    
-#pragma mark while	  
+// MARK: mark while	  
 	while (1)
 	{
       
@@ -128,7 +128,7 @@ uint16_t count=0;
       }
 
 		
-#pragma mark start_usb
+// MARK: mark start_usb
        /**	Begin USB-routinen	***********************/
       
         // Start USB
@@ -286,7 +286,7 @@ uint16_t count=0;
                //sendbuffer[0]=0x00;
                
             }break;
-#pragma mark default
+// MARK: mark default
             default:
             {
                // Abschnittnummer bestimmen
@@ -519,7 +519,7 @@ uint16_t count=0;
 
       */
       
-#pragma mark Anschlag
+// MARK: mark Anschlag
       // ********************
       // * Anschlag Motor A *
       // ********************
@@ -589,7 +589,7 @@ uint16_t count=0;
          AnschlagVonMotor(3);
       }
 
-#pragma mark Motor A    
+// MARK: mark Motor A    
       // Begin Motor A
       // **************************************
       // * Motor A *
@@ -717,7 +717,7 @@ uint16_t count=0;
             
         }
         */
-      #pragma mark Motor B
+      // MARK: mark Motor B
       // **************************************
       // * Motor B *
       // **************************************
@@ -812,7 +812,7 @@ uint16_t count=0;
       // End Motor B
       
       // Begin Motor C
-#pragma mark Motor C
+// MARK: mark Motor C
       // **************************************
       // * Motor C *
       // **************************************
@@ -915,7 +915,7 @@ uint16_t count=0;
          }
       }
      
-      #pragma mark Motor D
+      // MARK: mark Motor D
         // **************************************
       // * Motor D *
       // **************************************
@@ -1017,7 +1017,7 @@ uint16_t count=0;
 		/* **** rx_buffer abfragen **************** */
 		//rxdata=0;
 		
-#pragma mark Tasten		
+// MARK: mark Tasten		
 		//	Daten von USB vorhanden
 		 // rxdata
 		

@@ -457,7 +457,7 @@ uint8_t  AbschnittLaden_4M(const uint8_t* AbschnittDaten) // 22us
 {
    stopTimer2();
 	uint8_t returnwert=0;
-#pragma mark Reihenfolge der Daten
+// MARK: mark Reihenfolge der Daten
 	/*			
 	 Reihenfolge der Daten:
     0    schritteax lb
@@ -976,7 +976,7 @@ void AnschlagVonMotor(const uint8_t motor)
    lcd_puthex(richtung);
    if (richtung & (1<<(RICHTUNG_A + motor))) // Richtung ist auf Anschlag A0 zu         
    {
-      
+      // MARK: END_A0 
       if (!(anschlagstatus &(1<< (END_A0 + motor))))
       {
          cli();
@@ -1046,8 +1046,8 @@ void AnschlagVonMotor(const uint8_t motor)
             lcd_putc('C');
             lcd_putint(cncstatus);
 
-            lcd_puthex(STEPPERPIN_1);
-            lcd_puthex(STEPPERPIN_2);
+ //           lcd_puthex(STEPPERPIN_1);
+//            lcd_puthex(STEPPERPIN_2);
          } // end HOME
          else           // beide Seiten abstellen
          {    
@@ -1088,9 +1088,10 @@ void AnschlagVonMotor(const uint8_t motor)
             
             //ladeposition=0;
             // motorstatus=0;
-            
             richtung &= ~(1<<(RICHTUNG_A + motor)); // Richtung umschalten
-         }
+            //richtung ^= (1<<(RICHTUNG_A + motor)); // Richtung umschalten
+           
+         } // both
          
          sei();
       } // NOT END_A0
@@ -1356,7 +1357,7 @@ uint8_t RingbufferLaden(const uint8_t outpos )
    return lage;
 }
 
-#pragma mark - main
+// MARK: mark - main
 int main (void) 
 {
     int8_t r;
@@ -1439,7 +1440,7 @@ uint16_t count=0;
    volatile uint8_t versioninth = (versionint & 0xFF00)>>8;
    lcd_clr_line(0);
    
-#pragma mark while     
+// MARK: mark while     
    while (1)
    {
       
@@ -1452,14 +1453,14 @@ uint16_t count=0;
          loopcount1+=1;
          LOOPLEDPORT ^=(1<<LOOPLED);
          PORTD ^= (1<<PORTD6);
-         
+   /*      
          lcd_gotoxy(0,3);
          lcd_putc('H');
          lcd_puthex(homestatus);
          lcd_putc(' ');
          lcd_putc('M');
          lcd_puthex(motorstatus);
-         
+    */     
          //
          //STEPPERPORT_1 ^= (1 << MA_STEP);
          //PORTD ^= (1<<0);
@@ -1496,7 +1497,7 @@ uint16_t count=0;
       }
 
       
-#pragma mark start_usb
+// MARK: mark start_usb
        /**   Begin USB-routinen   ***********************/
       
         // Start USB
@@ -1706,7 +1707,7 @@ uint16_t count=0;
 
                }break;
                
-#pragma mark default
+// MARK: mark default
             default:
             {
                // Abschnittnummer bestimmen
@@ -1939,7 +1940,8 @@ uint16_t count=0;
 
       */
       
-#pragma mark Anschlag
+//// MARK: mark Anschlag
+      // MARK: Anschlag
       // ********************
       // * Anschlag Motor A *
       // ********************
@@ -1949,6 +1951,9 @@ uint16_t count=0;
          if (anschlagstatus &(1<< END_A0))
          {
             anschlagstatus &= ~(1<< END_A0); // Bit fuer Anschlag A0 zuruecksetzen
+            lcd_gotoxy(0,2);
+            lcd_putc(' ');
+         
          }
       }
       else // Schlitten bewegte sich auf Anschlag zu und ist am Anschlag A0
@@ -1988,6 +1993,9 @@ uint16_t count=0;
          if (anschlagstatus &(1<< END_C0))
          {
             anschlagstatus &= ~(1<< END_C0); // Bit fuer Anschlag C0 zuruecksetzen
+            lcd_gotoxy(0,3);
+            lcd_putc(' ');
+
          }         
       }
       else // Schlitten bewegte sich auf Anschlag zu und ist am Anschlag C0
@@ -2015,7 +2023,7 @@ uint16_t count=0;
          AnschlagVonMotor(3);
       }
 
-#pragma mark Motor A    
+// MARK: mark Motor A    
       // Begin Motor A
       // **************************************
       // * Motor A *
@@ -2034,7 +2042,6 @@ uint16_t count=0;
                // Wenn StepCounterA abgelaufen und relevant: next Datenpaket abrufen
                if (StepCounterA == 0 && (motorstatus & (1<< COUNT_A)))    // Motor A ist relevant fuer Stepcount
                {
-                  
                    //
                   // Begin Ringbuffer-Stuff
                   //if (ringbufferstatus & (1<<ENDBIT))
@@ -2047,7 +2054,7 @@ uint16_t count=0;
 
                       cli();
                      ringbufferstatus = 0;
-                    // cncstatus=0;
+                     cncstatus=0;
                      
                      // home: 
                      motorstatus &= ~(1<< COUNT_A);
@@ -2104,19 +2111,15 @@ uint16_t count=0;
                      AbschnittCounter++;
                      
                   }
-                  
                }
-               
                
             }
             else
             {
                 STEPPERPORT_1 |= (1<<MA_STEP);               // Impuls an Motor A HI -> OFF
-                
-               
+                               
                 if (StepCounterA ==0)                     // Keine Steps mehr fuer Motor A
-                {
-    
+                {    
                     STEPPERPORT_1 |= (1<<MA_EN);                     // Motor A OFF
                 }
             }
@@ -2134,7 +2137,7 @@ uint16_t count=0;
             
         }
         */
-      #pragma mark Motor B
+      // MARK: mark Motor B
       // **************************************
       // * Motor B *
       // **************************************
@@ -2229,7 +2232,7 @@ uint16_t count=0;
       // End Motor B
       
       // Begin Motor C
-#pragma mark Motor C
+// MARK: mark Motor C
       // **************************************
       // * Motor C *
       // **************************************
@@ -2261,7 +2264,7 @@ uint16_t count=0;
 
                cli();
                ringbufferstatus = 0;
-    //           cncstatus=0;
+               cncstatus=0;
                // home: 
                motorstatus &= ~(1<< COUNT_C);
 
@@ -2342,7 +2345,7 @@ uint16_t count=0;
          }
       }
          sei();
-      #pragma mark Motor D
+      // MARK: mark Motor D
         // **************************************
       // * Motor D *
       // **************************************
@@ -2444,7 +2447,7 @@ uint16_t count=0;
       /* **** rx_buffer abfragen **************** */
       //rxdata=0;
       
-#pragma mark Tasten      
+// MARK: mark Tasten      
       //   Daten von USB vorhanden
        // rxdata
       
