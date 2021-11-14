@@ -9,7 +9,7 @@
 
 #include <string.h>
 #include <avr/io.h>
-#include <avr/delay.h>
+#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 //#include <avr/sleep.h>
@@ -348,6 +348,7 @@ void slaveinit(void)
    CMD_DDR |= (1<<STROM);                    // Stepperstrom-Ausgang, Active HI
    CMD_PORT |= (1<<STROM);                   // HI
 }
+
 
 
 
@@ -976,8 +977,8 @@ void AnschlagVonMotor(const uint8_t motor)
    lcd_puthex(richtung);
    if (richtung & (1<<(RICHTUNG_A + motor))) // Richtung ist auf Anschlag A0 zu         
    {
-      // MARK: END_A0 
-      if (!(anschlagstatus &(1<< (END_A0 + motor))))
+      // MARK: END_A0 + motor
+      if (!(anschlagstatus &(1<< (END_A0 + motor)))) // END_A0 6
       {
          cli();
          
@@ -992,7 +993,7 @@ void AnschlagVonMotor(const uint8_t motor)
          {
             lcd_putc(' ');
             lcd_puts("home");
-            // Paralleler Schlitten gleichzeitig am Anschlag?
+           // Zuerst horizonal auf Anschlag
             switch (motor) // Stepperport 1
             {
                case 0:
@@ -1015,8 +1016,11 @@ void AnschlagVonMotor(const uint8_t motor)
                lcd_gotoxy(10,2);
                //lcd_putc('A');
                //lcd_putint2(motor);
-               lcd_puts("MA stop");
+               lcd_puts("P1 Motor");
+               lcd_putint1(motor);
+               lcd_puts(" stop");
                STEPPERPORT_1 |= (1<<(MA_EN + motor));     // Motor 0,1 OFF // andere Richtung kommt anschliessend von master
+               
                //STEPPERPORT_2 |= (1<<(MA_EN + motor + 2)); // Paralleler Motor 2,3 OFF
                StepCounterA=0;
             //   StepCounterB=0;
@@ -1028,7 +1032,9 @@ void AnschlagVonMotor(const uint8_t motor)
             {
                
                lcd_gotoxy(10,3);
-               lcd_puts("MC stop");
+               lcd_puts("P2 Motor");
+               lcd_putint1(motor);
+               lcd_puts(" stop");
 
                STEPPERPORT_2 |= (1<<(MA_EN + motor));     // Motor 2,3 OFF
                //STEPPERPORT_1 |= (1<<(MA_EN + motor - 2)); // Paralleler Motor 0,1 OFF
@@ -1094,7 +1100,7 @@ void AnschlagVonMotor(const uint8_t motor)
          } // both
          
          sei();
-      } // NOT END_A0
+      } // END_A0 + motor
       else
       {
          
@@ -1176,7 +1182,7 @@ void gohome(void)
    CNCDaten[0][8] = 82;// schrittebx lb
    CNCDaten[0][9] = 4;// schrittebx hb
    CNCDaten[0][12] = 14;// delaybx lb
-   CNCDaten[0][16] = 240; // code F0
+   CNCDaten[0][16] = 0xF0; // code F0
    CNCDaten[0][17] = 2; // position Beschreibung der Lage im Schnittpolygon:first, last, ...
    CNCDaten[1][19] = 0; // indexl
    CNCDaten[0][21] = 1; // motorstatus // relevanter Motor fuer Abschnitt
@@ -1187,7 +1193,7 @@ void gohome(void)
    CNCDaten[1][10] = 80;// schritteby lb
    CNCDaten[1][11] = 65;// schritteby hb
    CNCDaten[1][14] = 14; // delayby lb
-   CNCDaten[1][16] = 240; // code F0
+   CNCDaten[1][16] = 0xF0; // code F0
    CNCDaten[1][17] = 2;// position Beschreibung der Lage im Schnittpolygon:first, last, ...
    CNCDaten[1][19] = 1; // indexl
    CNCDaten[1][21] = 1;
@@ -1973,10 +1979,15 @@ uint16_t count=0;
          if (anschlagstatus &(1<< END_B0))
          {
             anschlagstatus &= ~(1<< END_B0); // Bit fuer Anschlag B0 zuruecksetzen
+            lcd_gotoxy(0,2);
+            lcd_putc(' ');
          }
       }
       else // Schlitten bewegte sich auf Anschlag zu und ist am Anschlag B0
       {
+         lcd_gotoxy(0,2);
+         lcd_putc('B');
+
          AnschlagVonMotor(1);
       } // end Anschlag B0
       
@@ -2016,10 +2027,14 @@ uint16_t count=0;
          if (anschlagstatus &(1<< END_D0))
          {
             anschlagstatus &= ~(1<< END_D0); // Bit fuer Anschlag D0 zuruecksetzen
-         }
+            lcd_gotoxy(0,2);
+            lcd_putc(' ');
+        }
       }
       else // Schlitten bewegte sich auf Anschlag zu und ist am Anschlag D0
       {
+         lcd_gotoxy(0,3);
+         lcd_putc('D');
          AnschlagVonMotor(3);
       }
 
@@ -2055,7 +2070,6 @@ uint16_t count=0;
                       cli();
                      ringbufferstatus = 0;
                      cncstatus=0;
-                     
                      // home: 
                      motorstatus &= ~(1<< COUNT_A);
                      
@@ -2098,6 +2112,7 @@ uint16_t count=0;
                         sendbuffer[6]=ladeposition;
                         //sendbuffer[7]=(ladeposition & 0xFF00) >> 8;
                         sendbuffer[8] = cncstatus;
+                        // TODO: ev.  A0 setzen
                         sendbuffer[0]=0xA1;
                         usb_rawhid_send((void*)sendbuffer, 50);
                      }
@@ -2153,8 +2168,6 @@ uint16_t count=0;
          
          if (StepCounterB ==0 && (motorstatus & (1<< COUNT_B))) // Motor B ist relevant fuer Stepcount 
          {
-//            STEPPERPORT_1 |= (1<<MB_EN);               // Motor B OFF
-            
             //StepCounterA=0;
             //lcd_putc('-');
             // Begin Ringbuffer-Stuff
